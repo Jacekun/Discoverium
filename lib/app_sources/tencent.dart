@@ -15,8 +15,9 @@ class Tencent extends AppSource {
   @override
   String sourceSpecificStandardizeURL(String url, {bool forSelection = false}) {
     RegExp standardUrlRegEx = RegExp(
-        '^https?://${getSourceRegex(hosts)}/appdetail/[^/]+',
-        caseSensitive: false);
+      '^https?://${getSourceRegex(hosts)}/appdetail/[^/]+',
+      caseSensitive: false,
+    );
     var match = standardUrlRegEx.firstMatch(url);
     if (match == null) {
       throw InvalidURLError(name);
@@ -25,8 +26,10 @@ class Tencent extends AppSource {
   }
 
   @override
-  Future<String?> tryInferringAppId(String standardUrl,
-      {Map<String, dynamic> additionalSettings = const {}}) async {
+  Future<String?> tryInferringAppId(
+    String standardUrl, {
+    Map<String, dynamic> additionalSettings = const {},
+  }) async {
     return Uri.parse(standardUrl).pathSegments.last;
   }
 
@@ -36,42 +39,49 @@ class Tencent extends AppSource {
     Map<String, dynamic> additionalSettings,
   ) async {
     String appId = (await tryInferringAppId(standardUrl))!;
-    String baseHost = Uri.parse(standardUrl)
-        .host
-        .split('.')
-        .reversed
-        .toList()
-        .sublist(0, 2)
-        .reversed
-        .join('.');
+    String baseHost = Uri.parse(
+      standardUrl,
+    ).host.split('.').reversed.toList().sublist(0, 2).reversed.join('.');
 
     var res = await sourceRequest(
-        'https://upage.html5.$baseHost/wechat-apkinfo', additionalSettings,
-        followRedirects: false, postBody: {"packagename": appId});
+      'https://a.app.$baseHost/o/simple.jsp?pkgname=$appId',
+      additionalSettings,
+      followRedirects: false,
+    );
 
     if (res.statusCode == 200) {
-      var json = jsonDecode(res.body);
-      if (json['app_detail_records'][appId] == null) {
+      dynamic json;
+      try {
+        json = loggingJsonDecode(
+          res.body
+              .split('\n')
+              .map((line) => line.trim())
+              .where((line) => line.startsWith('window.systemData='))
+              .first
+              .substring(18),
+          context: 'Tencent: parsing app detail from system data',
+        )['appDetail'];
+      } catch (e) {
         throw NoReleasesError();
       }
-      var version =
-          json['app_detail_records'][appId]['apk_all_data']['version_name'];
-      var apkUrl = json['app_detail_records'][appId]['apk_all_data']['url'];
+      if (json == null) {
+        throw NoReleasesError();
+      }
+      var version = json['versionName'];
+      var apkUrl = json['apkUrl64'];
+      apkUrl ??= json['apkUrl'];
       if (apkUrl == null) {
         throw NoAPKError();
       }
-      var appName = json['app_detail_records'][appId]['app_info']['name'];
-      var author = json['app_detail_records'][appId]['app_info']['author'];
-      var releaseDate =
-          json['app_detail_records'][appId]['app_info']['update_time'];
-      var apkName = Uri.parse(apkUrl).queryParameters['fsname'] ??
+      var appName = json['appName'];
+      var author = json['author'];
+      var apkName =
+          Uri.parse(apkUrl).queryParameters['fsname'] ??
           '${appId}_$version.apk';
 
-      return APKDetails(
-          version, [MapEntry(apkName, apkUrl)], AppNames(author, appName),
-          releaseDate: releaseDate != null
-              ? DateTime.fromMillisecondsSinceEpoch(releaseDate * 1000)
-              : null);
+      return APKDetails(version, [
+        MapEntry(apkName, apkUrl),
+      ], AppNames(author, appName));
     } else {
       throw getObtainiumHttpError(res);
     }

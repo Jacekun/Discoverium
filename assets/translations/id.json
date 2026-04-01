@@ -167,6 +167,7 @@
     "versionCorrectionDisabled": "Koreksi versi dinonaktifkan (sepertinya plugin tidak berfungsi)",
     "unknown": "Tidak diketahui",
     "none": "Tidak ada",
+    "all": "Semua",
     "never": "Tidak pernah",
     "latestVersionX": "Terbaru: {}",
     "installedVersionX": "Terpasang: {}",
@@ -253,6 +254,7 @@
     "verifyLatestTag": "Verifikasi label 'terbaru'",
     "intermediateLinkRegex": "Filter tautan 'perantara' untuk dikunjungi",
     "filterByLinkText": "Filter tautan berdasarkan teks tautan",
+    "matchLinksOutsideATags": "Mencocokkan tautan di luar tag <a>",
     "intermediateLinkNotFound": "Tautan perantara tidak ditemukan",
     "intermediateLink": "Tautan perantara",
     "exemptFromBackgroundUpdates": "Dikecualikan dari pembaruan latar belakang (jika diaktifkan)",
@@ -330,6 +332,17 @@
     "documentationLinksNote": "Halaman GitHub Discoverium yang ditautkan di bawah ini berisi tautan ke video, artikel, diskusi, dan sumber daya lain yang akan membantu Anda memahami cara menggunakan aplikasi.",
     "batteryOptimizationNote": "Perhatikan bahwa unduhan latar belakang dapat bekerja lebih andal jika Anda menonaktifkan optimasi baterai OS untuk Discoverium.",
     "fileDeletionError": "Gagal menghapus file (coba hapus secara manual, lalu coba lagi): \"{}\"",
+    "foregroundService": "Layanan latar depan Discoverium",
+    "foregroundServiceExplanation": "Gunakan layanan latar depan untuk pemeriksaan pembaruan (lebih dapat diandalkan, menghabiskan lebih banyak daya)",
+    "fgServiceNotice": "Pemberitahuan ini diperlukan untuk pemeriksaan pembaruan latar belakang (dapat disembunyikan dalam pengaturan OS)",
+    "excludeSecrets": "Mengecualikan rahasia",
+    "GHReqPrefix": "Instance 'sky22333/hubproxy' untuk permintaan GitHub",
+    "includeZips": "Menyertakan file ZIP",
+    "zippedApkFilterRegEx": "Saring APK di dalam ZIP",
+    "googleVerificationWarningP1": "Google has announced that, starting in 2026 / 2027, all apps on \"certified\" Android devices will needs the developer to submit personal identity details directly to Google.\n\nKarena pengembang aplikasi ini tidak setuju dengan persyaratan ini, Discoverium tidak akan lagi bekerja pada perangkat Android bersertifikat setelah waktu itu.",
+    "googleVerificationWarningP2": "Pergi ke https: / / keep androidpen.org / untuk informasi lebih lanjut.",
+    "googleVerificationWarningP3": "Perlu dicatat bahwa dalam jangka pendek, mungkin terus mungkin untuk memasang aplikasi \"belum diverifikasi\" (bukan -compliant) melalui proses \"arus maju\" yang Google janjikan untuk mengimplementasikan setelah reaksi luas terhadap pengumuman mereka, tetapi mereka tidak rinci bagaimana hal ini akan bekerja sehingga tidak jelas apakah itu benar-benar akan menjaga kebebasan pengguna dengan cara praktis.\n\nDalam hal apapun, Google bergerak adalah langkah yang signifikan menuju akhir bebas, tujuan umum komputasi untuk individu.\n\nOS tidak bersertifikat, seperti GrapheneOS, seharusnya tidak terpengaruh oleh hal ini selama mereka diizinkan untuk terus ada.",
+    "multipleSigners": "Tanda Tangan Ganda",
     "removeAppQuestion": {
         "one": "Hapus aplikasi?",
         "other": "Hapus aplikasi?"
@@ -389,5 +402,9 @@
     "apk": {
         "one": "{} APK",
         "other": "{} APK"
+    },
+    "certificateHash": {
+        "one": "Hash Sertifikat",
+        "other": "Hashes Sertifikat"
     }
 }

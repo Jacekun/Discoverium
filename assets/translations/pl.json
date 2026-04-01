@@ -167,6 +167,7 @@
     "versionCorrectionDisabled": "Korekta wersji wyłączona (wtyczka wydaje się nie działać)",
     "unknown": "Nieznane",
     "none": "Brak",
+    "all": "Wszystkie",
     "never": "Nigdy",
     "latestVersionX": "Najnowsza wersja: {}",
     "installedVersionX": "Zainstalowana wersja: {}",
@@ -253,6 +254,7 @@
     "verifyLatestTag": "Zweryfikuj najnowszy tag",
     "intermediateLinkRegex": "Filtr linków \"pośrednich\" do odwiedzenia w pierwszej kolejności",
     "filterByLinkText": "Filtruj linki według tekstu linku",
+    "matchLinksOutsideATags": "Dopasowywanie linków poza znacznikami <a>",
     "intermediateLinkNotFound": "Nie znaleziono linku pośredniego",
     "intermediateLink": "Link pośredni",
     "exemptFromBackgroundUpdates": "Wyklucz z uaktualnień w tle (jeśli są włączone)",
@@ -330,6 +332,17 @@
     "documentationLinksNote": "Strona Discoverium GitHub, do której link znajduje się poniżej, zawiera linki do filmów, artykułów, dyskusji i innych zasobów, które pomogą ci zrozumieć, jak korzystać z aplikacji.",
     "batteryOptimizationNote": "Należy pamiętać, że pobieranie w tle może działać bardziej niezawodnie po wyłączeniu optymalizacji baterii systemu operacyjnego dla Discoverium.",
     "fileDeletionError": "Nie udało się usunąć pliku (spróbuj usunąć go ręcznie, a następnie spróbuj ponownie): \"{}\"",
+    "foregroundService": "Usługa nowej generacji Discoverium",
+    "foregroundServiceExplanation": "Używanie usługi pierwszoplanowej do sprawdzania aktualizacji (bardziej niezawodne, zużywa więcej energii)",
+    "fgServiceNotice": "To powiadomienie jest wymagane do sprawdzania aktualizacji w tle (można je ukryć w ustawieniach systemu operacyjnego).",
+    "excludeSecrets": "Wyklucz sekrety",
+    "GHReqPrefix": "Instancja \"sky22333/hubproxy\" dla żądań GitHub",
+    "includeZips": "Dołączanie plików ZIP",
+    "zippedApkFilterRegEx": "Filtrowanie plików APK wewnątrz ZIP",
+    "googleVerificationWarningP1": "Google ogłosił, że począwszy od 2026 / 2027, wszystkie aplikacje na \"certyfikowanych\" urządzeń z systemem Android będą wymagać od dewelopera przekazania danych osobowych bezpośrednio do Google.\n\nPonieważ deweloperzy tej aplikacji nie zgadzają się na ten wymóg, po tym czasie nie będzie już działać na certyfikowanych urządzeniach z systemem Android.",
+    "googleVerificationWarningP2": "Więcej informacji można uzyskać na stronie https: / / keepandroidopen.org.",
+    "googleVerificationWarningP3": "Należy zauważyć, że w perspektywie krótkoterminowej może być nadal możliwe instalowanie \"niezweryfikowanych\" aplikacji (niezgodnych z wymaganiami) poprzez proces \"zaawansowanego przepływu\", który Google obiecał wdrożyć po szerokim odwrocie do ich ogłoszenia, ale nie mają one szczegółowych informacji, jak to działa, więc nie jest jasne, czy będzie rzeczywiście zachować wolność użytkownika w jakikolwiek praktyczny sposób.\n\nW każdym razie ruch Google jest znaczącym krokiem w kierunku zakończenia swobodnego, ogólnego celu dla osób fizycznych.\n\nNiecertyfikowane Oses, takie jak GrapheneOS, nie powinny mieć na to wpływu tak długo, jak długo będą mogły istnieć.",
+    "multipleSigners": "Wielu sygnatariuszy",
     "removeAppQuestion": {
         "one": "Usunąć aplikację?",
         "few": "Usunąć aplikacje?",
@@ -419,5 +432,9 @@
         "few": "{} apki",
         "many": "{} apek",
         "other": "{} apki"
+    },
+    "certificateHash": {
+        "one": "Certyfikat Hash",
+        "other": "Hashes certyfikatu"
     }
 }

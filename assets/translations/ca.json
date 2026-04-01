@@ -167,6 +167,7 @@
     "versionCorrectionDisabled": "Correcció de versions desactivada (el plugin sembla que no funciona)",
     "unknown": "Desconegut",
     "none": "Cap",
+    "all": "Tot",
     "never": "Mai",
     "latestVersionX": "Última versió: {}",
     "installedVersionX": "Versió instal·lada: {}",
@@ -253,6 +254,7 @@
     "verifyLatestTag": "Comprova l'etiqueta 'Latest' (última versió)",
     "intermediateLinkRegex": "Filtra per un enllaç 'intermediari' per anar-hi",
     "filterByLinkText": "Filtra els enllaços pel text de l'enllaç",
+    "matchLinksOutsideATags": "Coincideix amb els enllaços fora de les etiquetes <a>",
     "intermediateLinkNotFound": "No s'ha trobat l'enllaç intermediari",
     "intermediateLink": "Enllaç intermediari",
     "exemptFromBackgroundUpdates": "Exempta d'actualitzacions en segon pla (si han estat habilitades)",
@@ -318,18 +320,29 @@
     "crowdsourcedConfigsShort": "Configuració de les aplicacions crowdsourcing",
     "allowInsecure": "Permet les sol·licituds HTTP insegures",
     "stayOneVersionBehind": "Roman a la versió anterior a l'última",
-    "useFirstApkOfVersion": "Auto-select first of multiple APKs",
+    "useFirstApkOfVersion": "Tria automàticament la primera aplicació entre moltes",
     "refreshBeforeDownload": "Actualitza les dades de l'aplicació abans de descarregar-la",
     "tencentAppStore": "Tencent App Store",
     "coolApk": "CoolApk",
-    "vivoAppStore": "vivo App Store (CN)",
+    "vivoAppStore": "Vivo App Store (CN)",
     "name": "Nom",
     "smartname": "Nom (smart)",
     "sortMethod": "Mètode d'ordenació",
     "welcome": "Benvinguda",
     "documentationLinksNote": "La pàgina GitHub d'Discoverium enllaçada a sota conté enllaços a vídeos, articles, debats i altres recursos que t'ajudaran a entendre com usar l'aplicació.",
     "batteryOptimizationNote": "Tingues present que les descàrregues en segon pla funcionaran millor si inhabilites l'optimització de bateria per a Discoverium.",
-    "fileDeletionError": "Failed to delete file (try deleting it manually then try again): \"{}\"",
+    "fileDeletionError": "No s'ha pogut suprimir el fitxer (intenta suprimir-lo manualment i torna-ho a provar): \"{}\"",
+    "foregroundService": "Servei d'Discoverium en primer pla",
+    "foregroundServiceExplanation": "Usa el servei d'Discoverium en primer pla per comprovar les actualitzacions (és més fiable però consumeix més bateria)",
+    "fgServiceNotice": "Aquesta notificació és necessària per comprovar les actualitzacions en segon pla (la pots ocultar als paràmetres del Sistema Operatiu)",
+    "excludeSecrets": "Exclou els secrets",
+    "GHReqPrefix": "exemple per a les peticions de GitHub",
+    "includeZips": "Inclou fitxers ZIPName",
+    "zippedApkFilterRegEx": "Filtre APKs dins ZIPName",
+    "googleVerificationWarningP1": "Google ha anunciat que, començant en 2026/2027, totes les aplicacions en dispositius d'Android \"que requereixen que el desenvolupador enviï els detalls personals directament a Google.\n\nDes que els desenvolupadors d'aquesta aplicació no estan d'acord amb aquest requisit, l' obtenció ja no funcionarà en els dispositius certificats d'Android.",
+    "googleVerificationWarningP2": "Aneu a https://buitandoideopen.org/ per a més informació.",
+    "googleVerificationWarningP3": "Tingueu en compte que en el terme curt, pot continuar sent possible instal· lar aplicacions \"inverificats\" (no compatible) mitjançant un procés de flux \"advince\" que Google ha promès implementar després d'una gran reacció al seu anunci, però no han detallat com funcionaria, de manera que és clar si es preservarà realment les llibertats dels usuaris de cap manera pràctica.\n\nEn qualsevol cas, el moviment de Google és un pas significatiu cap al final de la informàtica lliure i general deficient per als individus.\n\nEls SO no validats, com el GraphenOS, no haurien de ser afectats per això sempre que se'ls permeti continuar existint.",
+    "multipleSigners": "Signadors múltiples",
     "removeAppQuestion": {
         "one": "¿Suprimeixo l'aplicació?",
         "other": "¿Suprimeixo les aplicacions?"
@@ -355,16 +368,16 @@
         "other": "{} URLs"
     },
     "minute": {
-        "one": "{} Minut",
-        "other": "{} Minuts"
+        "one": "{} minut",
+        "other": "{} minuts"
     },
     "hour": {
-        "one": "{} Hora",
-        "other": "{} Hores"
+        "one": "{} hora",
+        "other": "{} hores"
     },
     "day": {
-        "one": "{} Dia",
-        "other": "{} Dies"
+        "one": "{} dia",
+        "other": "{} dies"
     },
     "clearedNLogsBeforeXAfterY": {
         "one": "Suprimit {n} registre (anterior a = {before}, posterior a = {after})",
@@ -389,5 +402,9 @@
     "apk": {
         "one": "{} APK",
         "other": "{} APKs"
+    },
+    "certificateHash": {
+        "one": "Suma de certificat",
+        "other": "Resums del certificat"
     }
 }

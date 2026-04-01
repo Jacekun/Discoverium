@@ -50,7 +50,7 @@
     "appsString": "앱",
     "noApps": "앱 없음",
     "noAppsForFilter": "필터에 대한 앱 없음",
-    "byX": "{}에 의해",
+    "byX": "{} 제공",
     "percentProgress": "진행률: {}%",
     "pleaseWait": "기다려 주세요",
     "updateAvailable": "업데이트 가능",
@@ -167,6 +167,7 @@
     "versionCorrectionDisabled": "버전 수정 비활성화됨 (플러그인이 작동하지 않는 것 같습니다)",
     "unknown": "알 수 없음",
     "none": "없음",
+    "all": "모두",
     "never": "절대",
     "latestVersionX": "최신: {}",
     "installedVersionX": "설치됨: {}",
@@ -253,6 +254,7 @@
     "verifyLatestTag": "'최신' 태그 확인",
     "intermediateLinkRegex": "'중간' 링크 방문 필터",
     "filterByLinkText": "링크 텍스트로 링크 필터링",
+    "matchLinksOutsideATags": "<> 태그 외부의 링크 일치",
     "intermediateLinkNotFound": "중간 링크를 찾을 수 없습니다",
     "intermediateLink": "중간 링크",
     "exemptFromBackgroundUpdates": "백그라운드 업데이트에서 제외 (활성화된 경우)",
@@ -330,6 +332,17 @@
     "documentationLinksNote": "아래에 링크된 Discoverium 깃허브 페이지에는 앱 사용 방법을 이해하는 데 도움이 되는 동영상, 기사, 토론 및 기타 리소스에 대한 링크가 포함되어 있습니다.",
     "batteryOptimizationNote": "Discoverium의 OS 배터리 최적화를 비활성화하면 백그라운드 다운로드가 더 안정적으로 작동할 수 있습니다.",
     "fileDeletionError": "파일을 삭제하지 못했습니다(수동으로 삭제한 후 다시 시도하세요): \"{}\"",
+    "foregroundService": "옵테니움 포그라운드 서비스",
+    "foregroundServiceExplanation": "업데이트 확인을 위해 포그라운드 서비스 사용(안정성 향상, 전력 소비량 증가)",
+    "fgServiceNotice": "이 알림은 백그라운드 업데이트 확인에 필요합니다(OS 설정에서 숨길 수 있음).",
+    "excludeSecrets": "비밀 제외",
+    "GHReqPrefix": "GitHub 요청을 위한 'sky22333/hubproxy' 인스턴스",
+    "includeZips": "ZIP 파일 포함",
+    "zippedApkFilterRegEx": "ZIP 내 APK 필터링",
+    "googleVerificationWarningP1": "Google은 2026~2027년부터 \"인증된\" Android 기기에서 구동되는 모든 앱의 개발자가 자신의 개인 신원 정보를 Google에 직접 제출하도록 요구할 것이라고 발표했습니다. 본 앱의 개발자들은 이 요구 사항에 동의하지 않으므로, 해당 시점 이후 Discoverium은 인증된 Android 기기에서 더 이상 작동하지 않습니다.",
+    "googleVerificationWarningP2": "keepandroidopen.org에서 자세한 정보를 확인해보세요.",
+    "googleVerificationWarningP3": "단기적으로는 Google이 발표 이후 거센 반발에 부딪혀 도입하기로 약속한 \"고급 절차\"를 통해 \"인증되지 않은\" 앱을 계속 설치하는 것이 가능할 수도 있습니다. 하지만 Google은 이 방식이 구체적으로 어떻게 작동하는지 밝히지 않았으므로, 이것이 실질적으로 사용자의 자유를 보장할지는 불분명합니다. 결과적으로 Google의 이러한 행보는 개인을 위한 자유롭고 범용적인 컴퓨팅 환경의 종말을 향한 중대한 단계입니다. GrapheneOS와 같은 인증되지 않은 OS는 해당 프로젝트가 유지되는 한 이 조치의 영향을 받지 않습니다.",
+    "multipleSigners": "다수 Signers",
     "removeAppQuestion": {
         "one": "앱을 제거하시겠습니까?",
         "other": "앱을 제거하시겠습니까?"
@@ -389,5 +402,9 @@
     "apk": {
         "one": "{} APK",
         "other": "{} APK"
+    },
+    "certificateHash": {
+        "one": "인증서 해시",
+        "other": "인증서 해시"
     }
 }

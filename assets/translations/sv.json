@@ -167,6 +167,7 @@
     "versionCorrectionDisabled": "Versionskorrigering inaktiverat (plugin verkar inte fungera)",
     "unknown": "Okänd",
     "none": "Ingen",
+    "all": "Alla",
     "never": "Aldrig",
     "latestVersionX": "Senaste Version: {}",
     "installedVersionX": "Installerad Version: {}",
@@ -253,6 +254,7 @@
     "verifyLatestTag": "Verifiera 'senaste'-taggen",
     "intermediateLinkRegex": "Filtrera för en \"mellanliggande\" länk att besöka",
     "filterByLinkText": "Filtrera länkar efter länktext",
+    "matchLinksOutsideATags": "Matcha länkar utanför <a>-taggar",
     "intermediateLinkNotFound": "Mellanlänk hittades inte",
     "intermediateLink": "Mellanlänk",
     "exemptFromBackgroundUpdates": "Undta från bakgrundsuppdateringar (om aktiverad)",
@@ -330,6 +332,17 @@
     "documentationLinksNote": "Discoverium GitHub-sidan som länkas nedan innehåller länkar till videor, artiklar, diskussioner och andra resurser som hjälper dig att förstå hur du använder appen.",
     "batteryOptimizationNote": "Observera att nedladdningar i bakgrunden kan fungera mer tillförlitligt om du inaktiverar OS-batterioptimeringar för Discoverium.",
     "fileDeletionError": "Misslyckades med att radera filen (försök radera den manuellt och försök sedan igen): \"{}\"",
+    "foregroundService": "Discoverium förgrundstjänst",
+    "foregroundServiceExplanation": "Använd en förgrundstjänst för uppdateringskontroll (mer tillförlitlig, förbrukar mer ström)",
+    "fgServiceNotice": "Detta meddelande krävs för bakgrundsuppdateringskontroll (det kan döljas i OS-inställningarna)",
+    "excludeSecrets": "Utesluta hemligheter",
+    "GHReqPrefix": "Instansen \"sky22333/hubproxy\" för GitHub-förfrågningar",
+    "includeZips": "Inkludera ZIP-filer",
+    "zippedApkFilterRegEx": "Filtrera APK:er inuti ZIP",
+    "googleVerificationWarningP1": "Google har meddelat att alla appar på \"certifierade\" Android-enheter kommer att kräva att utvecklaren skickar personuppgifter direkt till Google.\n\nEftersom utvecklarna av denna app inte samtycker till detta krav kommer Discoverium inte längre att arbeta med certifierade Android-enheter efter den tiden.",
+    "googleVerificationWarningP2": "Gå till https://keepandroidopen.org/ för mer information.",
+    "googleVerificationWarningP3": "Observera att på kort sikt kan det fortsätta att vara möjligt att installera \"overifierade\" (icke-kompatibla) appar genom en \"avancerad flöde\" -process som Google har lovat att genomföra efter bred backlash till deras tillkännagivande, men de har inte detaljerat hur detta skulle fungera så det är oklart om det verkligen kommer att bevara användarfrihet på något praktiskt sätt.\n\nGoogles flytt är ett viktigt steg mot slutet av gratis, allmänt ändamål datorer för individer.\n\nIcke-certifierade operativsystem, som GrapheneOS, bör inte påverkas av detta så länge de får fortsätta att existera.",
+    "multipleSigners": "Flera signers",
     "removeAppQuestion": {
         "one": "Ta Bort App?",
         "other": "Ta Bort Appar?"
@@ -355,16 +368,16 @@
         "other": "{} URL:er"
     },
     "minute": {
-        "one": "{} Minut",
-        "other": "{} Minuter"
+        "one": "{} minut",
+        "other": "{} minuter"
     },
     "hour": {
-        "one": "{} Timme",
-        "other": "{} Timmar"
+        "one": "{} timme",
+        "other": "{} timmar"
     },
     "day": {
-        "one": "{} Dag",
-        "other": "{} Dagar"
+        "one": "{} dag",
+        "other": "{} dagar"
     },
     "clearedNLogsBeforeXAfterY": {
         "one": "Rensade {n} logg (före = {before}, efter = {after})",
@@ -389,5 +402,9 @@
     "apk": {
         "one": "{} APK",
         "other": "{} APK:er"
+    },
+    "certificateHash": {
+        "one": "Certificate Hash",
+        "other": "Certificate Hashes"
     }
 }

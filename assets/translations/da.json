@@ -167,6 +167,7 @@
     "versionCorrectionDisabled": "Versionskorrektion deaktiveret (plugin ser ikke ud til at virke)",
     "unknown": "Ukendt",
     "none": "Ingen",
+    "all": "Alle",
     "never": "Aldrig",
     "latestVersionX": "Seneste: {}",
     "installedVersionX": "Installeret: {}",
@@ -253,6 +254,7 @@
     "verifyLatestTag": "Verificer 'seneste'-tagget",
     "intermediateLinkRegex": "Filtrer efter et 'mellemliggende' link at besøge",
     "filterByLinkText": "Filtrer links efter linktekst",
+    "matchLinksOutsideATags": "Match links uden for <a>-tags",
     "intermediateLinkNotFound": "Mellemliggende link ikke fundet",
     "intermediateLink": "Mellemliggende link",
     "exemptFromBackgroundUpdates": "Undtag fra baggrundsopdateringer (hvis aktiveret)",
@@ -330,6 +332,17 @@
     "documentationLinksNote": "Discoveriums GitHub-side, som der linkes til nedenfor, indeholder links til videoer, artikler, diskussioner og andre ressourcer, som kan hjælpe dig med at forstå, hvordan du bruger appen.",
     "batteryOptimizationNote": "Bemærk, at baggrundsdownloads kan fungere mere pålideligt, hvis du deaktiverer OS-batterioptimering for Discoverium.",
     "fileDeletionError": "Kunne ikke slette filen (prøv at slette den manuelt og prøv igen): \"{}\"",
+    "foregroundService": "Discoverium forgrundstjeneste",
+    "foregroundServiceExplanation": "Brug en forgrundstjeneste til opdateringskontrol (mere pålidelig, bruger mere strøm)",
+    "fgServiceNotice": "Denne meddelelse er nødvendig for baggrundsopdateringskontrol (den kan skjules i OS-indstillingerne).",
+    "excludeSecrets": "Udeluk hemmeligheder",
+    "GHReqPrefix": "'sky22333/hubproxy'-instans til GitHub-anmodninger",
+    "includeZips": "Inkluder ZIP-filer",
+    "zippedApkFilterRegEx": "Filtrer APK'er inde i ZIP",
+    "googleVerificationWarningP1": "Google har annonceret, at fra 2026 / 2027, alle apps på \"certificeret\" Android-enheder vil kræve, at udvikleren til at indsende personlige identitetsoplysninger direkte til Google.\n\nDa udviklerne af denne app ikke accepterer dette krav, Discoverium vil ikke længere arbejde på certificerede Android-enheder efter dette tidspunkt.",
+    "googleVerificationWarningP2": "Gå til https: / / keepandroidopen.org / for mere information.",
+    "googleVerificationWarningP3": "Bemærk, at på kort sigt, kan det fortsætte med at være muligt at installere \"uverificerbare\" (ikke-overensstemmende) apps gennem en \"avanceret flow\" proces, som Google har lovet at gennemføre efter bred backlash til deres meddelelse, men de har ikke detaljeret, hvordan dette ville arbejde, så det er uklart, om det virkelig vil bevare brugernes friheder i praksis.\n\nUnder alle omstændigheder er Googles bevægelse et væsentligt skridt i retning af afslutningen af fri, generel-formål computing for enkeltpersoner.\n\nIkke-certificerede OS, som GrapheneOS, bør være upåvirket af dette, så længe de har lov til at fortsætte med at eksistere.",
+    "multipleSigners": "Flere signere",
     "removeAppQuestion": {
         "one": "Fjern app?",
         "other": "Fjern apps?"
@@ -355,16 +368,16 @@
         "other": "{} URL'er"
     },
     "minute": {
-        "one": "{} Minut",
-        "other": "{} Minutter"
+        "one": "{} minut",
+        "other": "{} minutter"
     },
     "hour": {
-        "one": "{} Time",
-        "other": "{} Timer"
+        "one": "{} time",
+        "other": "{} timer"
     },
     "day": {
-        "one": "{} Dag",
-        "other": "{} Dage"
+        "one": "{} dag",
+        "other": "{} dage"
     },
     "clearedNLogsBeforeXAfterY": {
         "one": "Ryddet {n} log (før = {before}, efter = {after})",
@@ -389,5 +402,9 @@
     "apk": {
         "one": "{} APK",
         "other": "{} APK'er"
+    },
+    "certificateHash": {
+        "one": "Certifikathash",
+        "other": "Certifikathash"
     }
 }

@@ -18,8 +18,9 @@ class RuStore extends AppSource {
   @override
   String sourceSpecificStandardizeURL(String url, {bool forSelection = false}) {
     RegExp standardUrlRegEx = RegExp(
-        '^https?://(www\\.)?${getSourceRegex(hosts)}/catalog/app/+[^/]+',
-        caseSensitive: false);
+      '^https?://(www\\.)?${getSourceRegex(hosts)}/catalog/app/+[^/]+',
+      caseSensitive: false,
+    );
     RegExpMatch? match = standardUrlRegEx.firstMatch(url);
     if (match == null) {
       throw InvalidURLError(name);
@@ -28,18 +29,22 @@ class RuStore extends AppSource {
   }
 
   @override
-  Future<String?> tryInferringAppId(String standardUrl,
-      {Map<String, dynamic> additionalSettings = const {}}) async {
+  Future<String?> tryInferringAppId(
+    String standardUrl, {
+    Map<String, dynamic> additionalSettings = const {},
+  }) async {
     return Uri.parse(standardUrl).pathSegments.last;
   }
 
-  Future<String> decodeString(String str) async {
+  Future<dynamic> decodeJsonBody(Uint8List bytes) async {
     try {
-      return (await CharsetDetector.autoDecode(
-              Uint8List.fromList(str.codeUnits)))
-          .string;
+      return loggingJsonDecode((await CharsetDetector.autoDecode(bytes)).string, context: 'RuStore: parsing auto-decoded response body');
     } catch (e) {
-      return str;
+      try {
+        return loggingJsonDecode(utf8.decode(bytes), context: 'RuStore: parsing UTF-8 decoded response body');
+      } catch (_) {
+        rethrow;
+      }
     }
   }
 
@@ -50,19 +55,20 @@ class RuStore extends AppSource {
   ) async {
     String? appId = await tryInferringAppId(standardUrl);
     Response res0 = await sourceRequest(
-        'https://backapi.rustore.ru/applicationData/overallInfo/$appId',
-        additionalSettings);
+      'https://backapi.rustore.ru/applicationData/overallInfo/$appId',
+      additionalSettings,
+    );
     if (res0.statusCode != 200) {
       throw getObtainiumHttpError(res0);
     }
-    var appDetails = jsonDecode(res0.body)['body'];
+    var appDetails = (await decodeJsonBody(res0.bodyBytes))['body'];
     if (appDetails['appId'] == null) {
       throw NoReleasesError();
     }
 
     String appName = appDetails['appName'] ?? tr('app');
     String author = appDetails['companyName'] ?? name;
-    String? dateStr = appDetails['updatedAt'];
+    String? dateStr = appDetails['appVerUpdatedAt'];
     String? version = appDetails['versionName'];
     String? changeLog = appDetails['whatsNew'];
     if (version == null) {
@@ -74,27 +80,31 @@ class RuStore extends AppSource {
     }
 
     Response res1 = await sourceRequest(
-        'https://backapi.rustore.ru/applicationData/download-link',
-        additionalSettings,
-        followRedirects: false,
-        postBody: {"appId": appDetails['appId'], "firstInstall": true});
-    var downloadDetails = jsonDecode(res1.body)['body'];
-    if (res1.statusCode != 200 || downloadDetails['apkUrl'] == null) {
+      'https://backapi.rustore.ru/applicationData/v2/download-link',
+      additionalSettings,
+      followRedirects: false,
+      postBody: {"appId": appDetails['appId'], "firstInstall": true},
+    );
+    var downloadDetails = (await decodeJsonBody(res1.bodyBytes))['body'];
+    try {
+      if (res1.statusCode != 200 || downloadDetails['downloadUrls'][0]['url'] == null) {
+        throw NoAPKError();
+      }
+    } catch (e) {
       throw NoAPKError();
     }
 
-    appName = await decodeString(appName);
-    author = await decodeString(author);
-    changeLog = changeLog != null ? await decodeString(changeLog) : null;
-
     return APKDetails(
-        version,
-        getApkUrlsFromUrls([
-          (downloadDetails['apkUrl'] as String)
-              .replaceAll(RegExp('\\.zip\$'), '.apk')
-        ]),
-        AppNames(author, appName),
-        releaseDate: relDate,
-        changeLog: changeLog);
+      version,
+      getApkUrlsFromUrls([
+        (downloadDetails['downloadUrls'][0]['url'] as String).replaceAll(
+          RegExp('\\.zip\$'),
+          '.apk',
+        ),
+      ]),
+      AppNames(author, appName),
+      releaseDate: relDate,
+      changeLog: changeLog,
+    );
   }
 }

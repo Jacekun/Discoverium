@@ -11,7 +11,8 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
-.vscode/
+.vscode/*
+!.vscode/launch.json
 
 # IntelliJ related
 *.iml
@@ -46,6 +47,8 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 /android/app/.cxx
+/android/build/reports
+/android/.kotlin
 
 # Android keystore properties
 /android/keystore.properties
@@ -53,3 +56,4 @@ app.*.map.json
 # Custom
 TODO.txt
 data
+node_modules/

@@ -25,7 +25,7 @@
     "standard": "Standard",
     "custom": "Custom",
     "useMaterialYou": "Use Material You",
-    "githubStarredRepos": "GitHub starred repos",
+    "githubStarredRepos": "GitHub starred repositories",
     "uname": "Username",
     "wrongArgNum": "Wrong number of arguments provided",
     "xIsTrackOnly": "{} is track-only",
@@ -37,7 +37,7 @@
     "cancelled": "Cancelled",
     "appAlreadyAdded": "App already added",
     "alreadyUpToDateQuestion": "App already up to date?",
-    "addApp": "Add App",
+    "addApp": "Add app",
     "appSourceURL": "App source URL",
     "error": "Error",
     "add": "Add",
@@ -88,7 +88,7 @@
     "author": "Author",
     "upToDateApps": "Up to date apps",
     "nonInstalledApps": "Non-installed apps",
-    "importExport": "Import/Export",
+    "importExport": "Import/export",
     "settings": "Settings",
     "exportedTo": "Exported to {}",
     "obtainiumExport": "Discoverium export",
@@ -168,6 +168,7 @@
     "versionCorrectionDisabled": "Version correction disabled (plugin doesn't seem to work)",
     "unknown": "Unknown",
     "none": "None",
+    "all": "All",
     "never": "Never",
     "latestVersionX": "Latest: {}",
     "installedVersionX": "Installed: {}",
@@ -254,6 +255,7 @@
     "verifyLatestTag": "Verify the 'latest' tag",
     "intermediateLinkRegex": "Filter for an 'intermediate' link to visit",
     "filterByLinkText": "Filter links by link text",
+    "matchLinksOutsideATags": "Match links outside <a> tags",
     "intermediateLinkNotFound": "Intermediate link not found",
     "intermediateLink": "Intermediate link",
     "exemptFromBackgroundUpdates": "Exempt from background updates (if enabled)",
@@ -293,10 +295,10 @@
     "selectX": "Select {}",
     "parallelDownloads": "Allow parallel downloads",
     "allowUnverifiedApps": "Allow unverified apps",
-    "useShizuku": "Use Shizuku or Sui to install",
-    "shizukuBinderNotFound": "Shizuku service not running",
+    "useShizuku": "Use Dhizuku, Shizuku or Sui to install",
+    "shizukuBinderNotFound": "Dhizuku or Shizuku services are not running",
     "shizukuOld": "Old Shizuku version (<11) - update it",
-    "shizukuOldAndroidWithADB": "Shizuku running on Android < 8.1 with ADB - update Android or use Sui instead",
+    "shizukuOldAndroidWithADB": "Shizuku running on Android < 8.1 with ADB - update Android or use Dhizuku or Sui instead",
     "shizukuPretendToBeGooglePlay": "Set Google Play as the installation source (if Shizuku is used)",
     "useSystemFont": "Use the system font",
     "useVersionCodeAsOSVersion": "Use app versionCode as OS-detected version",
@@ -315,7 +317,7 @@
     "badDownload": "The APK could not be parsed (incompatible or partial download)",
     "beforeNewInstallsShareToAppVerifier": "Share new apps with AppVerifier (if available)",
     "appVerifierInstructionToast": "Share to AppVerifier, then return here when ready.",
-    "wiki": "Help/Wiki",
+    "wiki": "Help/wiki",
     "crowdsourcedConfigsLabel": "Crowdsourced app configurations (use at your own risk)",
     "crowdsourcedConfigsShort": "Crowdsourced app configurations",
     "allowInsecure": "Allow insecure HTTP requests",
@@ -329,9 +331,20 @@
     "smartname": "Name (smart)",
     "sortMethod": "Sort method",
     "welcome": "Welcome",
-    "documentationLinksNote": "The Discoverium GitHub page linked below contains links to videos, articles, discussions and other resources that will help you understand how to use the app.",
-    "batteryOptimizationNote": "Note that background downloads may work more reliably if you disable OS battery optimizations for Discoverium.",
+    "documentationLinksNote": "The Discoverium GitHub page linked below contains links to videos, articles, discussions, and other resources that will help you understand how to use the app.",
+    "batteryOptimizationNote": "Note that background downloads may work more reliably if you switch to the \"foreground service\" in the Discoverium settings and/or disable battery optimization for Discoverium in your OS settings.",
     "fileDeletionError": "Failed to delete file (try deleting it manually then try again): \"{}\"",
+    "foregroundService": "Discoverium foreground service",
+    "foregroundServiceExplanation": "Use a foreground service for update checking (more reliable, consumes more power)",
+    "fgServiceNotice": "This notification is required for background update checking (it can be hidden in the OS settings)",
+    "excludeSecrets": "Exclude secrets",
+    "GHReqPrefix": "'sky22333/hubproxy' instance for GitHub requests",
+    "includeZips": "Include ZIP files",
+    "zippedApkFilterRegEx": "Filter APKs inside ZIP",
+    "googleVerificationWarningP1": "Google has announced that, starting in 2026/2027, all apps on \"certified\" Android devices will require the developer to submit personal identity details directly to Google.\n\nSince the developers of this app do not agree to this requirement, Discoverium will no longer work on certified Android devices after that time.",
+    "googleVerificationWarningP2": "Go to https://keepandroidopen.org/ for more information.",
+    "googleVerificationWarningP3": "Note that in the short term, it may continue to be possible to install \"unverified\" (non-compliant) apps through an \"advanced flow\" process that Google has promised to implement after broad backlash to their announcement, but they have not detailed how this would work so it is unclear whether it will truly preserve user freedoms in any practical way.\n\nIn any case, Google's move is a significant step towards the end of free, general-purpose computing for individuals.\n\nNon-certified OSes, like GrapheneOS, should be unaffected by this for as long as they are allowed to continue to exist.",
+    "multipleSigners": "Multiple Signers",
     "removeAppQuestion": {
         "one": "Remove app?",
         "other": "Remove apps?"
@@ -357,16 +370,16 @@
         "other": "{} URLs"
     },
     "minute": {
-        "one": "{} Minute",
-        "other": "{} Minutes"
+        "one": "{} minute",
+        "other": "{} minutes"
     },
     "hour": {
-        "one": "{} Hour",
-        "other": "{} Hours"
+        "one": "{} hour",
+        "other": "{} hours"
     },
     "day": {
-        "one": "{} Day",
-        "other": "{} Days"
+        "one": "{} day",
+        "other": "{} days"
     },
     "clearedNLogsBeforeXAfterY": {
         "one": "Cleared {n} log (before = {before}, after = {after})",
@@ -401,5 +414,9 @@
     "tryDifferentSearch": "Try a different search term",
     "noAppsLoaded": "No Apps Loaded",
     "loadAppsToSearch": "Load apps to start searching",
-    "copy": "Copy"
+    "copy": "Copy",
+    "certificateHash": {
+      "one": "Certificate Hash",
+      "other": "Certificate Hashes"
+    }
 }

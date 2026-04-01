@@ -652,12 +652,12 @@
   category: lifestyle
   commercial: false
   description: Native version of Open Food Facts on Android - Coders & Decoders
-  icon: https://raw.githubusercontent.com/openfoodfacts/openfoodfacts-androidapp/refs/heads/develop/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+  icon: https://raw.githubusercontent.com/openfoodfacts/smooth-app/refs/heads/develop/fastlane/metadata/android/en-US/images/icon.png
   id: openfoodfacts.github.scrachx.openfood
   type: curated
   verified: true
   releases:
-    url: https://github.com/openfoodfacts/openfoodfacts-androidapp/releases
+    url: https://github.com/openfoodfacts/smooth-app/releases
 - name: OpenNote
   authors: Yang Dai
   category: productivity

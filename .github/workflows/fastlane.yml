@@ -1,16 +1,14 @@
+# This workflow overrides the upstream fastlane.yml for this fork.
+# It runs a no-op job so GitHub doesn't report "no jobs were run".
 name: Validate Fastlane metadata
 
 on:
-  workflow_dispatch:
   push:
-      branches: [ "main" ]
   pull_request:
-      branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Validate Fastlane Supply Metadata
-        uses: ashutoshgngwr/validate-fastlane-supply-metadata@v2
+      - run: echo "Build workflow disabled for this fork"

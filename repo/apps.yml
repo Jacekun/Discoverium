@@ -85,7 +85,7 @@
   type: curated
   verified: true
   releases:
-    url: https://github.com/markusfisch/BinaryEye
+    url: https://github.com/markusfisch/BinaryEye/releases
 - name: Bitwarden
   authors: Bitwarden
   category: security
@@ -141,6 +141,7 @@
   icon: https://raw.githubusercontent.com/GeorgeYT9769/cardabase-app/refs/heads/main/assets/icons/ic_launcher.png
   id: com.georgeyt9769.cardabase
   type: curated
+  verified: false
   releases:
     url: https://github.com/GeorgeYT9769/cardabase-app/releases
 - name: CloudStream
@@ -150,6 +151,8 @@
   description: Android app for streaming and downloading media.
   icon: https://raw.githubusercontent.com/recloudstream/cloudstream/refs/heads/master/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
   id: com.lagradost.cloudstream3
+  type: curated
+  verified: false
   releases:
     url: https://github.com/recloudstream/cloudstream/releases
 - name: Continuum
@@ -316,7 +319,7 @@
   type: curated
   verified: true
   releases:
-    url: http://github.com/Radiokot/photoprism-android-client/releases
+    url: https://github.com/Radiokot/photoprism-android-client/releases
 - name: Gauguin
   authors: meikpiep
   category: games
@@ -558,7 +561,7 @@
   type: curated
   verified: true
   releases:
-    url: https://github.com/mvmike/minimal-calendar-widget/release
+    url: https://github.com/mvmike/minimal-calendar-widget/releases
 - name: mLauncher
   authors: CreativeCodeCat
   category: tools
@@ -641,7 +644,7 @@
   category: launchers
   commercial: false
   description: Minimal AF Launcher for Android. Reduce your screen time. Daily wallpapers.
-  icon: http://raw.githubusercontent.com/tanujnotes/Olauncher/refs/heads/master/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp
+  icon: https://raw.githubusercontent.com/tanujnotes/Olauncher/refs/heads/master/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.webp
   id: app.olauncher
   type: curated
   verified: true
@@ -658,9 +661,10 @@
   verified: true
   releases:
     url: https://github.com/openfoodfacts/smooth-app/releases
-- name: Openbu 
+- name: Openbu
   authors: Nathan Grennan
   category: tools
+  commercial: false
   description: Openbu is a Kotlin Android app for Bambu 3D printers in Developer Mode
   icon: https://raw.githubusercontent.com/cygnusx-1-org/openbu/refs/heads/master/app/src/main/ic_launcher-playstore.png
   id: org.cygnusx1.openbu
@@ -898,7 +902,7 @@
   type: curated
   verified: true
   releases:
-    url: https://github.com/tasks/tasks
+    url: https://github.com/tasks/tasks/releases
 - name: Termux
   authors: Fredrik Fornwall, Leonid Pliushch
   category: tools

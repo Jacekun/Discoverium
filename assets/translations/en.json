@@ -274,7 +274,6 @@
   "matchLinksOutsideATags": "Match links outside <a> tags",
   "minStarCount": "Minimum star count",
   "minimumUpdateAge": "Minimum age for updates",
-  "updateHeldUntilX": "{} is held by the minimum update age until {}",
   "minute": {
     "one": "{} minute",
     "other": "{} minutes"
@@ -448,6 +447,7 @@
   "upToDateApps": "Up to date apps",
   "update": "Update",
   "updateAvailable": "Update available",
+  "updateHeldUntilX": "{} is held by the minimum update age until {}",
   "updateUrl": "Update URL",
   "updateX": "Update {}",
   "updates": "Updates",

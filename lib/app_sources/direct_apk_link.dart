@@ -14,12 +14,9 @@ class DirectAPKLink extends AppSource {
   String get name => tr('directAPKLink');
 
   DirectAPKLink() {
-    versionDetectionDisallowed = true;
     excludeCommonSettingKeys = [
       'versionExtractionRegEx',
       'matchGroupToUse',
-      'versionDetection',
-      'useVersionCodeAsOSVersion',
       'apkFilterRegEx',
       'autoApkFilterByArch',
     ];
@@ -90,7 +87,6 @@ class DirectAPKLink extends AppSource {
         }
       }
       additionalSettingsNew['directAPKLink'] = true;
-      additionalSettingsNew['versionDetection'] = false;
       return await html.getLatestAPKDetails(standardUrl, additionalSettingsNew);
     } catch (e) {
       rethrowOrWrapError(e);

@@ -17,7 +17,6 @@ class RuStore extends AppSource {
   RuStore() {
     hosts = ['rustore.ru'];
     name = 'RuStore';
-    naiveStandardVersionDetection = true;
     showReleaseDateAsVersionToggle = true;
     changeLogIfAnyIsMarkDown = false;
     inferAppIdFromUrlPath = true;

@@ -33,7 +33,6 @@ class Uptodown extends AppSource {
     name = 'Uptodown';
     hosts = ['uptodown.com'];
     allowSubDomains = true;
-    naiveStandardVersionDetection = true;
     showReleaseDateAsVersionToggle = true;
     urlsAlwaysHaveExtension = true;
   }

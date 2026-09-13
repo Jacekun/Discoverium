@@ -23,7 +23,6 @@ class VivoAppStore extends AppSource {
       'h5coml.vivo.com.cn',
       'detail-browser.vivo.com.cn',
     ];
-    naiveStandardVersionDetection = true;
     canSearch = true;
     allowOverride = false;
     // Vivo's download/detail endpoints redirect to plain-HTTP CDN URLs.

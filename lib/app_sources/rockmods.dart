@@ -9,7 +9,6 @@ class RockMods extends AppSource {
     name = 'RockMods';
     hosts = ['rockmods.net'];
     enforceTrackOnly = true;
-    naiveStandardVersionDetection = true;
     inferAppIdFromUrlPath = true;
   }
 

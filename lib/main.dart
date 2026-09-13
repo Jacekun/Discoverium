@@ -240,7 +240,6 @@ class _ObtainiumState extends State<Obtainium> {
                       apkUrls: [],
                       preferredApkIndex: 0,
                       additionalSettings: {
-                        'versionDetection': true,
                         'apkFilterRegEx': 'fdroid',
                         'invertAPKFilter': true,
                       },

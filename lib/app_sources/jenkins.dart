@@ -11,7 +11,6 @@ import 'package:obtainium/providers/source_provider.dart';
 class Jenkins extends AppSource {
   Jenkins() {
     name = 'Jenkins';
-    versionDetectionDisallowed = true;
     neverAutoSelect = true;
     showReleaseDateAsVersionToggle = true;
     changeLogPageIsStandardUrl = true;

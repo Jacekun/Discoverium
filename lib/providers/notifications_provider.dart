@@ -70,7 +70,7 @@ String _buildUpdateMessage(
 }) {
   if (updates.isEmpty) return emptyKey != null ? tr(emptyKey) : '';
   final name = updates[0].finalName;
-  final version = updates[0].latestVersion;
+  final version = updates[0].latestVersionName ?? updates[0].latestVersion;
   if (updates.length == 1) {
     final args = includeVersion ? [name, version] : [name];
     return tr(singleKey, args: args);

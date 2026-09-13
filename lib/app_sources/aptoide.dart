@@ -9,7 +9,6 @@ class Aptoide extends AppSource {
     name = 'Aptoide';
     hosts = ['aptoide.com'];
     allowSubDomains = true;
-    naiveStandardVersionDetection = true;
     showReleaseDateAsVersionToggle = true;
   }
 

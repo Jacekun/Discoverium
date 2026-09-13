@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:obtainium/custom_errors.dart';
 import 'package:obtainium/core/logging/app_logger.dart';
-import 'package:obtainium/app_sources/html.dart';
 import 'package:obtainium/components/generated_form_renderer.dart';
 import 'package:obtainium/utils/color_utils.dart';
 import 'package:obtainium/providers/apps_provider.dart';
@@ -19,36 +18,14 @@ import 'package:obtainium/providers/settings_provider.dart';
 import 'package:obtainium/providers/source_provider.dart';
 import 'package:path_provider/path_provider.dart';
 
-/// App persistence (load/save/remove), icons, and version-detection helpers.
+/// App persistence (load/save/remove), icons, and install-status helpers.
 const _corruptFileSuffix = '.corrupt';
-
-class VersionComparison {
-  final bool areEqual;
-  final String version;
-  const VersionComparison({required this.areEqual, required this.version});
-}
 
 /// Curated icon URLs that failed to download this session, so they are not
 /// re-requested on every app-list load.
 final Set<String> _failedDiscoveriumIconUrls = <String>{};
 
 extension AppsProviderLifecycle on AppsProvider {
-  bool _getNaiveStandardVersionDetection(App app) {
-    final source = SourceProvider().getSource(
-      app.url,
-      overrideSource: app.overrideSource,
-    );
-    return app.settings.getBool('naiveStandardVersionDetection') ||
-        source.naiveStandardVersionDetection;
-  }
-
-  String? _getRealInstalledVersion(App app, PackageInfo? installedInfo) {
-    if (installedInfo == null) return null;
-    return app.settings.getBool('useVersionCodeAsOSVersion')
-        ? installedInfo.versionCode?.toString()
-        : installedInfo.versionName;
-  }
-
   Future<Directory> getAppsDir() async {
     if (cachedAppsDir != null) return cachedAppsDir!;
     final Directory appsDir = Directory(
@@ -70,179 +47,34 @@ extension AppsProviderLifecycle on AppsProvider {
     return cachedAppsDir = appsDir;
   }
 
-  bool isVersionDetectionPossible(AppInMemory? app) {
-    if (app?.app == null) {
-      return false;
-    }
-    final source = SourceProvider().getSource(
-      app!.app.url,
-      overrideSource: app.app.overrideSource,
-    );
-    final naiveStandardVersionDetection = _getNaiveStandardVersionDetection(
-      app.app,
-    );
-    final String? realInstalledVersion = _getRealInstalledVersion(
-      app.app,
-      app.installedInfo,
-    );
-    final bool isHTMLWithNoVersionDetection =
-        (source is HTML &&
-        app.app.settings
-                .getStringOrNull('versionExtractionRegEx')
-                ?.isNotEmpty !=
-            true);
-    return !app.app.settings.getBool('trackOnly') &&
-        !app.app.settings.getBool('releaseDateAsVersion') &&
-        !isHTMLWithNoVersionDetection &&
-        !source.versionDetectionDisallowed &&
-        realInstalledVersion != null &&
-        app.app.installedVersion != null &&
-        (reconcileVersionDifferences(
-                  realInstalledVersion,
-                  app.app.installedVersion!,
-                ) !=
-                null ||
-            naiveStandardVersionDetection);
-  }
-
-  /// Reconciles reported vs. real installed/latest versions for [app].
-  /// Returns the modified app if any corrections were made, or null.
+  /// Records the package manager's own version of [app] as its installed
+  /// version — its versionName and versionCode, or nothing when it is not
+  /// installed. Returns the modified app, or null when nothing changed.
+  ///
+  /// The installed version is never inferred from a release. A track-only app
+  /// is left alone: it has no APK, so its installed version is whatever the
+  /// user marked.
   App? getCorrectedInstallStatusAppIfPossible(
     App app,
     PackageInfo? installedInfo,
   ) {
-    var modded = false;
-    final trackOnly = app.settings.getBool('trackOnly');
-    final versionDetectionIsStandard = app.settings.getBool('versionDetection');
-    final naiveStandardVersionDetection = _getNaiveStandardVersionDetection(
-      app,
-    );
-    final String? realInstalledVersion = _getRealInstalledVersion(
-      app,
-      installedInfo,
-    );
-    // 1. Compare reported vs. real installed versions where one is null.
-    if (installedInfo == null && app.installedVersion != null && !trackOnly) {
-      app = app.copyWith(installedVersion: null);
-      modded = true;
-    } else if (realInstalledVersion != null && app.installedVersion == null) {
-      app = app.copyWith(installedVersion: realInstalledVersion);
-      modded = true;
-    }
-    // 2. Reconcile differences between reported and real installed versions.
-    if (realInstalledVersion != null &&
-        app.installedVersion != null &&
-        realInstalledVersion != app.installedVersion &&
-        versionDetectionIsStandard) {
-      // App's reported version and real version don't match (and it uses standard version detection)
-      // If they share a standard format (and are still different under it), update the reported version accordingly
-      final correctedInstalledVersion = reconcileVersionDifferences(
-        realInstalledVersion,
-        app.installedVersion!,
-      );
-      if (correctedInstalledVersion?.areEqual == false) {
-        app = app.copyWith(
-          installedVersion: correctedInstalledVersion!.version,
-        );
-        modded = true;
-      } else if (naiveStandardVersionDetection) {
-        app = app.copyWith(installedVersion: realInstalledVersion);
-        modded = true;
-      }
-    }
-    // 3. Reconcile reported installed and latest versions.
-    if (app.installedVersion != null &&
-        app.installedVersion != app.latestVersion &&
-        versionDetectionIsStandard) {
-      // App's reported installed and latest versions don't match (and it uses standard version detection)
-      // If they share a standard format, make sure the App's reported installed version uses that format
-      final correctedInstalledVersion = reconcileVersionDifferences(
-        app.installedVersion!,
-        app.latestVersion,
-      );
-      if (correctedInstalledVersion?.areEqual == true) {
-        app = app.copyWith(
-          installedVersion: correctedInstalledVersion!.version,
-        );
-        modded = true;
-      }
-    }
-    // 4. Disable version detection if versions are not standardizable.
-    if (installedInfo != null &&
-        versionDetectionIsStandard &&
-        !isVersionDetectionPossible(
-          AppInMemory(app, null, installedInfo, null),
-        )) {
-      app = app.copyWith(
-        additionalSettings: Map<String, dynamic>.from(app.additionalSettings)
-          ..['versionDetection'] = false,
-      );
-      AppLogger.info('Could not reconcile version formats for: ${app.id}');
-      modded = true;
-    }
-
-    return modded ? app : null;
-  }
-
-  VersionComparison? reconcileVersionDifferences(
-    String templateVersion,
-    String comparisonVersion,
-  ) {
-    // Both sides fall back to the unanchored formats when the anchored ones
-    // find nothing. Without it on the template side, a version carrying any
-    // decoration ("1.18.1:Eclipse") matched no format at all, so it was judged
-    // incomparable with itself — which switched the app's version detection
-    // off for good and left it comparing release labels by string equality.
-    var templateVersionFormats = VersionService().findStandardFormatsForVersion(
-      templateVersion,
-      true,
-    );
-    if (templateVersionFormats.isEmpty) {
-      templateVersionFormats = VersionService().findStandardFormatsForVersion(
-        templateVersion,
-        false,
-      );
-    }
-    var comparisonVersionFormats = VersionService()
-        .findStandardFormatsForVersion(comparisonVersion, true);
-    if (comparisonVersionFormats.isEmpty) {
-      comparisonVersionFormats = VersionService().findStandardFormatsForVersion(
-        comparisonVersion,
-        false,
-      );
-    }
-    final commonStandardFormats = templateVersionFormats.intersection(
-      comparisonVersionFormats,
-    );
-    if (commonStandardFormats.isEmpty) {
+    if (app.settings.getBool('trackOnly')) return null;
+    final installedVersion = installedInfo == null
+        ? null
+        : versionNameOrCode(
+            installedInfo.versionName,
+            installedInfo.versionCode,
+          );
+    final installedVersionCode = installedInfo?.versionCode;
+    if (app.installedVersion == installedVersion &&
+        app.installedVersionCode == installedVersionCode) {
       return null;
     }
-    // Compare under the MOST SPECIFIC shared format only. Accepting any format
-    // that happens to match would call two versions equal on the strength of
-    // the loosest one they share: under "[0-9]+", "1.18.1:Eclipse" and
-    // "v1.19.0" both reduce to "1", and a real update would be recorded as
-    // already installed.
-    final ranked = commonStandardFormats.toList()
-      ..sort((a, b) {
-        final digitRuns = RegExp('[0-9]');
-        final runsA = digitRuns.allMatches(a).length;
-        final runsB = digitRuns.allMatches(b).length;
-        if (runsA != runsB) return runsB.compareTo(runsA);
-        return b.length.compareTo(a.length);
-      });
-    if (VersionService().doStringsMatchUnderRegEx(
-      ranked.first,
-      comparisonVersion,
-      templateVersion,
-    )) {
-      return VersionComparison(areEqual: true, version: comparisonVersion);
-    }
-    return VersionComparison(areEqual: false, version: templateVersion);
+    return app.copyWith(
+      installedVersion: installedVersion,
+      installedVersionCode: installedVersionCode,
+    );
   }
-
-  /// Delegates to [VersionService.doStringsMatchUnderRegEx].
-  bool doStringsMatchUnderRegEx(String pattern, String value1, String value2) =>
-      VersionService().doStringsMatchUnderRegEx(pattern, value1, value2);
 
   Future<void> loadApps({String? singleId}) async {
     await waitForAppsToLoad();

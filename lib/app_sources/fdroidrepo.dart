@@ -533,12 +533,8 @@ class FDroidRepo extends AppSource {
       if (selected.isEmpty) {
         throw NoReleasesError();
       }
-      final useVersionCode =
-          additionalSettings['useVersionCodeAsOSVersion'] == true;
       return APKDetails(
-        useVersionCode
-            ? selected.first.versionCode.toString()
-            : selected.first.versionName,
+        selected.first.versionName,
         getApkUrlsFromUrls(
           selected.map((v) => '${index.baseUrl}/${v.apkName}').toList(),
         ),

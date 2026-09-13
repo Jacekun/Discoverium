@@ -37,7 +37,9 @@ extension AppsProviderUpdates on AppsProvider {
     } else if (newApp.apkUrls.isNotEmpty) {
       newApp = newApp.copyWith(preferredApkIndex: 0);
     }
-    return newApp;
+    // Whether there is an update rests on the version the APK itself declares,
+    // so that is read here, after the hold has settled which APK is offered.
+    return resolveLatestApkVersion(newApp, previous: currentApp);
   }
 
   /// Holds [newApp] back at [currentApp]'s release while the newly found one
@@ -83,7 +85,7 @@ extension AppsProviderUpdates on AppsProvider {
       return null;
     }
     await saveApps([newApp]);
-    return newApp.latestVersion != currentApp.latestVersion ? newApp : null;
+    return latestApkVersionChanged(currentApp, newApp) ? newApp : null;
   }
 
   /// Returns app IDs sorted by last update check time, oldest first.
@@ -198,7 +200,7 @@ extension AppsProviderUpdates on AppsProvider {
           if (newApp != null) {
             final isUpdate =
                 currentApp != null &&
-                newApp.latestVersion != currentApp.latestVersion &&
+                latestApkVersionChanged(currentApp, newApp) &&
                 appHasOfferableUpdate(newApp, settingsProvider);
             return MapEntry(newApp, isUpdate);
           }
@@ -217,7 +219,7 @@ extension AppsProviderUpdates on AppsProvider {
               if (newApp != null) {
                 final isUpdate =
                     currentApp != null &&
-                    newApp.latestVersion != currentApp.latestVersion &&
+                    latestApkVersionChanged(currentApp, newApp) &&
                     appHasOfferableUpdate(newApp, settingsProvider);
                 return MapEntry(newApp, isUpdate);
               }
@@ -303,21 +305,8 @@ extension AppsProviderUpdates on AppsProvider {
     }
   }
 
-  /// Finds app IDs whose installed version differs from the latest version, with optional filtering.
-  /// Whether [app]'s installed and latest versions are the same release under
-  /// its `versionExtractionRegEx`. Two strings that differ only outside what
-  /// the regex captures are not an update.
-  ///
-  /// [appHasUpdate] orders versions but knows nothing about the per-app regex,
-  /// so this is checked alongside it rather than inside it.
-  bool _versionsMatchUnderRegEx(App app) {
-    final regex =
-        (app.additionalSettings['versionExtractionRegEx'] as String?) ?? '';
-    final installed = app.installedVersion;
-    if (regex.isEmpty || installed == null) return false;
-    return doStringsMatchUnderRegEx(regex, installed, app.latestVersion);
-  }
-
+  /// Finds app IDs with an update to offer or that are not installed, with
+  /// optional filtering.
   List<String> findAppIdsWithPendingUpdates({
     bool installedOnly = false,
     bool nonInstalledOnly = false,
@@ -326,8 +315,7 @@ extension AppsProviderUpdates on AppsProvider {
     for (final appId in apps.keys) {
       final app = apps[appId]!.app;
       if (installedOnly) {
-        if (appHasOfferableUpdate(app, settingsProvider) &&
-            !_versionsMatchUnderRegEx(app)) {
+        if (appHasOfferableUpdate(app, settingsProvider)) {
           updateAppIds.add(app.id);
         }
       } else if (nonInstalledOnly) {
@@ -335,8 +323,7 @@ extension AppsProviderUpdates on AppsProvider {
           updateAppIds.add(app.id);
         }
       } else if (app.installedVersion == null ||
-          (appHasOfferableUpdate(app, settingsProvider) &&
-              !_versionsMatchUnderRegEx(app))) {
+          appHasOfferableUpdate(app, settingsProvider)) {
         updateAppIds.add(app.id);
       }
     }

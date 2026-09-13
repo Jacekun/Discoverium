@@ -23,7 +23,6 @@ class CoolApk extends AppSource {
   CoolApk() {
     hosts = ['coolapk.com'];
     allowSubDomains = true;
-    naiveStandardVersionDetection = true;
     allowOverride = false;
     inferAppIdFromUrlPath = true;
   }

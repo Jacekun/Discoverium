@@ -161,8 +161,31 @@ class App {
   final String url;
   final String author;
   final String name;
+
+  /// The installed build's versionName as the package manager reports it (its
+  /// versionCode when it has none), or null when the app is not installed. A
+  /// track-only app has no APK, so for it this is the release the user marked
+  /// as installed instead.
   final String? installedVersion;
+
+  /// The installed build's versionCode. Null when not installed or track-only.
+  final int? installedVersionCode;
+
+  /// The source's own name for its latest release: a tag, title or date. It
+  /// identifies the release (for its notes, and to hold it back), but whether
+  /// there is an update is decided only by the APK's version below.
   final String latestVersion;
+
+  /// The versionCode and versionName declared in the manifest of the APK this
+  /// app would install. Null until that APK has been read, and for track-only
+  /// apps, which have no APK.
+  final int? latestVersionCode;
+  final String? latestVersionName;
+
+  /// The name of the APK [latestVersionCode] and [latestVersionName] were read
+  /// from, so the same APK of an unchanged release is not read again.
+  final String? latestVersionApkName;
+
   final List<MapEntry<String, String>> apkUrls;
   final List<MapEntry<String, String>> otherAssetUrls;
   final int preferredApkIndex;
@@ -194,7 +217,11 @@ class App {
     required this.author,
     required this.name,
     this.installedVersion,
+    this.installedVersionCode,
     required this.latestVersion,
+    this.latestVersionCode,
+    this.latestVersionName,
+    this.latestVersionApkName,
     this.apkUrls = const [],
     this.otherAssetUrls = const [],
     required this.preferredApkIndex,
@@ -247,7 +274,11 @@ class App {
     String? author,
     String? name,
     Object? installedVersion = _sentinel,
+    Object? installedVersionCode = _sentinel,
     String? latestVersion,
+    Object? latestVersionCode = _sentinel,
+    Object? latestVersionName = _sentinel,
+    Object? latestVersionApkName = _sentinel,
     List<MapEntry<String, String>>? apkUrls,
     List<MapEntry<String, String>>? otherAssetUrls,
     int? preferredApkIndex,
@@ -272,7 +303,19 @@ class App {
       installedVersion: installedVersion == _sentinel
           ? this.installedVersion
           : installedVersion as String?,
+      installedVersionCode: installedVersionCode == _sentinel
+          ? this.installedVersionCode
+          : installedVersionCode as int?,
       latestVersion: latestVersion ?? this.latestVersion,
+      latestVersionCode: latestVersionCode == _sentinel
+          ? this.latestVersionCode
+          : latestVersionCode as int?,
+      latestVersionName: latestVersionName == _sentinel
+          ? this.latestVersionName
+          : latestVersionName as String?,
+      latestVersionApkName: latestVersionApkName == _sentinel
+          ? this.latestVersionApkName
+          : latestVersionApkName as String?,
       apkUrls: apkUrls ?? List<MapEntry<String, String>>.from(this.apkUrls),
       otherAssetUrls:
           otherAssetUrls ??
@@ -328,7 +371,11 @@ class App {
         installedVersion: json['installedVersion'] == null
             ? null
             : json['installedVersion'] as String,
+        installedVersionCode: json['installedVersionCode'] as int?,
         latestVersion: (json['latestVersion'] ?? tr('unknown')) as String,
+        latestVersionCode: json['latestVersionCode'] as int?,
+        latestVersionName: json['latestVersionName'] as String?,
+        latestVersionApkName: json['latestVersionApkName'] as String?,
         apkUrls: assumed2DlistToStringMapList(
           jsonDecode((json['apkUrls'] ?? '[["placeholder", "placeholder"]]')),
         ),
@@ -384,7 +431,11 @@ class App {
     'author': author,
     'name': name,
     'installedVersion': installedVersion,
+    'installedVersionCode': installedVersionCode,
     'latestVersion': latestVersion,
+    'latestVersionCode': latestVersionCode,
+    'latestVersionName': latestVersionName,
+    'latestVersionApkName': latestVersionApkName,
     'apkUrls': jsonEncode(stringMapListTo2DList(apkUrls)),
     'otherAssetUrls': jsonEncode(stringMapListTo2DList(otherAssetUrls)),
     'preferredApkIndex': preferredApkIndex,
@@ -577,11 +628,9 @@ abstract class AppSource {
   bool appIdInferIsOptional = false;
   bool inferAppIdFromUrlPath = false;
   bool allowSubDomains = false;
-  bool naiveStandardVersionDetection = false;
   bool allowOverride = true;
   bool neverAutoSelect = false;
   bool showReleaseDateAsVersionToggle = false;
-  bool versionDetectionDisallowed = false;
   bool suppressStandardVersionExtraction = false;
   List<String> excludeCommonSettingKeys = [];
   bool urlsAlwaysHaveExtension = false;
@@ -753,20 +802,6 @@ abstract class AppSource {
       ),
     ],
     [
-      GeneratedFormSwitch(
-        'versionDetection',
-        label: tr('versionDetectionExplanation'),
-        value: true,
-      ),
-    ],
-    [
-      GeneratedFormSwitch(
-        'useVersionCodeAsOSVersion',
-        label: tr('useVersionCodeAsOSVersion'),
-        value: false,
-      ),
-    ],
-    [
       GeneratedFormTextField(
         'apkFilterRegEx',
         label: tr('filterAPKsByRegEx'),
@@ -850,15 +885,15 @@ abstract class AppSource {
   List<List<GeneratedFormItem>> get combinedAppSpecificSettingFormItems {
     var agnosticItems = cloneFormItems(_commonAppSettingFormItems);
 
-    final versionDetectionIdx = agnosticItems.indexWhere(
-      (row) => row.any((item) => item.key == 'versionDetection'),
+    final matchGroupIdx = agnosticItems.indexWhere(
+      (row) => row.any((item) => item.key == 'matchGroupToUse'),
     );
     if (showReleaseDateAsVersionToggle &&
-        versionDetectionIdx >= 0 &&
+        matchGroupIdx >= 0 &&
         !agnosticItems.any(
           (row) => row.any((item) => item.key == 'releaseDateAsVersion'),
         )) {
-      agnosticItems.insert(versionDetectionIdx + 1, [
+      agnosticItems.insert(matchGroupIdx + 1, [
         GeneratedFormSwitch(
           'releaseDateAsVersion',
           label: '${tr('releaseDateAsVersion')} (${tr('pseudoVersion')})',
@@ -923,16 +958,6 @@ abstract class AppSource {
           ),
         ],
       ]);
-    }
-
-    if (versionDetectionDisallowed) {
-      for (var item in agnosticItems.expand((row) => row)) {
-        if (item.key == 'versionDetection' ||
-            item.key == 'useVersionCodeAsOSVersion') {
-          (item as GeneratedFormSwitch).disabled = true;
-          item.value = false;
-        }
-      }
     }
 
     return [
@@ -1098,10 +1123,9 @@ List<MapEntry<String, String>> filterApks(
   bool? invert,
 ) => ApkFilterService().filterApks(apkUrls, apkFilterRegEx, invert);
 
-/// Returns true when the app uses pseudo-versioning (track-only or disabled version detection).
-bool isVersionPseudo(App app) =>
-    app.settings.getBool('trackOnly') ||
-    (app.installedVersion != null && !app.settings.getBool('versionDetection'));
+/// Returns true when the app's installed version is a release label rather than
+/// the OS's own version: a track-only app, which has no APK.
+bool isVersionPseudo(App app) => app.settings.getBool('trackOnly');
 
 // ========================================================================
 // SourceProvider — singleton that manages available AppSource instances,
@@ -1801,23 +1825,53 @@ String _stripVersionPrefix(String version) {
 
 final RegExp _leadingDigit = RegExp(r'[0-9]');
 
-/// Whether [latestVersion] should be offered as an update over
-/// [installedVersion].
+/// A git short hash at the end of a versionName ("12.10.1-dec46b0"). It names
+/// the commit a build came from, not a version, so like the ":Eclipse" in
+/// "1.18.1:Eclipse" it plays no part in comparing versions. Only a dash and
+/// exactly seven lowercase hex digits count; any other suffix is kept.
+final RegExp _trailingGitHash = RegExp(r'-[0-9a-f]{7}$');
+
+/// [versionName] without a trailing git short hash.
+String withoutGitHash(String versionName) =>
+    versionName.replaceFirst(_trailingGitHash, '');
+
+/// The version a build is shown and compared by: its versionName, or its
+/// versionCode when it declares no versionName.
+String versionNameOrCode(String? versionName, int? versionCode) =>
+    versionName ?? versionCode?.toString() ?? '';
+
+/// Whether the build [latestCode]/[latestName] is newer than the installed
+/// build [installedCode]/[installedName].
 ///
-/// A bare `installedVersion != latestVersion` reports an update whenever the
-/// two strings differ, including when the installed build is *ahead* of the
-/// latest release (e.g. after installing a pre-release). Only the provably
-/// backwards case is withheld: ordering is by the leading numeric core, so
-/// versions sharing that core but differing afterwards ("2.1.0-rc1" vs
-/// "2.1.0-rc2") compare equal, and those must still be offered. Strings with no
-/// orderable core are likewise offered — an unorderable pair is not proof the
-/// installed build is ahead.
-bool isNewer(String installedVersion, String latestVersion) {
-  if (sameVersionLabel(installedVersion, latestVersion)) return false;
-  final ordering = _compareVersionCores(installedVersion, latestVersion);
-  if (ordering == null) return true;
+/// versionCode decides first: Android orders builds by it, and a higher one is
+/// strictly newer. It does not have to change between releases, so only when
+/// the two are equal does the versionName decide, with any trailing git hash
+/// ignored. There is no further rule — two hashes cannot be ordered, and a
+/// different one is not assumed to be newer.
+bool apkVersionIsNewer({
+  required int installedCode,
+  required String installedName,
+  required int latestCode,
+  required String latestName,
+}) {
+  if (latestCode != installedCode) return latestCode > installedCode;
+  return versionNameIsNewer(
+    withoutGitHash(installedName),
+    withoutGitHash(latestName),
+  );
+}
+
+/// Whether versionName [latest] is newer than [installed].
+///
+/// Ordering is by the leading numeric core, then by what follows it (see
+/// [sameCoreIsNewer]). Names with no orderable core are not newer: a pair that
+/// cannot be ordered is no evidence of an update.
+bool versionNameIsNewer(String installed, String latest) {
+  if (sameVersionLabel(installed, latest)) return false;
+  final ordering = _compareVersionCores(installed, latest);
+  if (ordering == null) return false;
   if (ordering != 0) return ordering < 0;
-  return sameCoreIsNewer(installedVersion, latestVersion);
+  return sameCoreIsNewer(installed, latest);
 }
 
 /// A pre-release marker: what follows it belongs BEFORE the release naming
@@ -1862,29 +1916,49 @@ bool sameCoreIsNewer(String installed, String latest) {
   return installedRest.isEmpty && latestRest.isNotEmpty;
 }
 
-/// Whether [app] has an update available: something is installed, and the
-/// latest version should be offered over it.
-bool appHasUpdate(App app) {
-  final installed = app.installedVersion;
-  if (installed == null) return false;
-  // A pseudo-version is an opaque label (a release title, a tag, a track-only
-  // marker), not a version: any change to it is a new release. Ordering those
-  // would strand the app whenever the new label happens to sort lower, with
-  // neither an update nor a "mark updated" action offered.
-  if (isVersionPseudo(app)) {
-    // A pseudo-version is an opaque label, so any change to it is a new
-    // release — except when the two labels demonstrably name the SAME release
-    // ("1.18.1:Eclipse" and "v1.18.1"), which is not a change at all. Labels
-    // that differ otherwise stay offered, downgrades included, so an app is
-    // never stranded with neither an update nor a "mark updated" action.
-    if (sameVersionLabel(installed, app.latestVersion)) return false;
-    if (_compareVersionCores(installed, app.latestVersion) == 0) {
-      return sameCoreIsNewer(installed, app.latestVersion);
-    }
-    return true;
+/// The installed and latest APK versions of [app], or null when they cannot be
+/// compared: nothing is installed, the APK has not been read yet, or the app is
+/// track-only and has no APK.
+({int installedCode, String installedName, int latestCode, String latestName})?
+_apkVersions(App app) {
+  final installedName = app.installedVersion;
+  final installedCode = app.installedVersionCode;
+  final latestName = app.latestVersionName;
+  final latestCode = app.latestVersionCode;
+  if (app.settings.getBool('trackOnly') ||
+      installedName == null ||
+      installedCode == null ||
+      latestName == null ||
+      latestCode == null) {
+    return null;
   }
-  return isNewer(installed, app.latestVersion);
+  return (
+    installedCode: installedCode,
+    installedName: installedName,
+    latestCode: latestCode,
+    latestName: latestName,
+  );
 }
+
+/// Whether [app] has an update: the APK it would install is newer than the
+/// installed build, going only by the versions the two declare (see
+/// [apkVersionIsNewer]). The release's tag or title plays no part.
+bool appHasUpdate(App app) {
+  final versions = _apkVersions(app);
+  return versions != null &&
+      apkVersionIsNewer(
+        installedCode: versions.installedCode,
+        installedName: versions.installedName,
+        latestCode: versions.latestCode,
+        latestName: versions.latestName,
+      );
+}
+
+/// Whether the APK [after] would install declares a different version from the
+/// one [before] would.
+bool latestApkVersionChanged(App before, App after) =>
+    before.latestVersionCode != after.latestVersionCode ||
+    before.latestVersionName != after.latestVersionName;
 
 class VersionService {
   static const defaultMatchGroup = '0';
@@ -2024,110 +2098,24 @@ class VersionService {
     cache[version] = results;
     return results;
   }
-
-  bool doStringsMatchUnderRegEx(String pattern, String value1, String value2) {
-    final RegExp r;
-    try {
-      r = RegExp(pattern);
-    } on FormatException {
-      // The per-app versionExtractionRegEx is user-supplied. The settings form
-      // validates it, but an imported backup can still carry a bad pattern,
-      // and this runs inside the background update scan: throwing there would
-      // take down the whole check. Treat it as "no match", which offers the
-      // update rather than silently stranding the app.
-      return false;
-    }
-    final m1 = r.firstMatch(value1);
-    final m2 = r.firstMatch(value2);
-    return m1 != null && m2 != null
-        ? value1.substring(m1.start, m1.end) ==
-              value2.substring(m2.start, m2.end)
-        : false;
-  }
-
-  /// Compares two versions numerically when they share a common non-strict
-  /// standard format. Returns a negative value if [version1] is older than
-  /// [version2], a positive value if it is newer, 0 if they are numerically
-  /// equal, and null if they cannot be compared in a valid way.
-  int? compareVersionsNumerically(String version1, String version2) {
-    final commonFormats = findStandardFormatsForVersion(
-      version1,
-      false,
-    ).intersection(findStandardFormatsForVersion(version2, false));
-    if (commonFormats.isEmpty) {
-      return null;
-    }
-    final digitRunRegex = RegExp('[0-9]+');
-    String mostSpecific = commonFormats.first;
-    var mostSpecificRuns = digitRunRegex.allMatches(mostSpecific).length;
-    for (final format in commonFormats) {
-      final runs = digitRunRegex.allMatches(format).length;
-      if (runs > mostSpecificRuns ||
-          (runs == mostSpecificRuns && format.length > mostSpecific.length)) {
-        mostSpecific = format;
-        mostSpecificRuns = runs;
-      }
-    }
-    List<int> extractNumericRuns(String version) {
-      final match = RegExp(mostSpecific).firstMatch(version);
-      return digitRunRegex
-          .allMatches(match!.group(0)!)
-          .map((e) => int.parse(e.group(0)!))
-          .toList();
-    }
-
-    final runs1 = extractNumericRuns(version1);
-    final runs2 = extractNumericRuns(version2);
-    for (var i = 0; i < runs1.length; i++) {
-      if (runs1[i] != runs2[i]) {
-        return runs1[i] > runs2[i] ? 1 : -1;
-      }
-    }
-    return 0;
-  }
 }
 
-/// Whether [app] should be presented as having an update available: its
-/// installed version differs from its latest version and is not numerically
-/// newer than it. Numeric comparison only applies when both versions share a
-/// common non-strict standard format (see
-/// [VersionService.compareVersionsNumerically]) and the "hide downgrades"
-/// setting is enabled — otherwise a downgrade is still presented as an update.
 /// Whether an update should be offered for [app], honouring the user's
 /// `hideDowngrades` preference.
 ///
-/// With the preference on (the default) this is [appHasUpdate] and nothing
-/// else: its ordering is finer than [isAppUpdateable]'s, which truncates both
-/// versions to the deepest standard format they share and so reads 1.2.3 and
-/// 1.2 as the same release. Letting the two vote would offer a downgrade
-/// whenever the installed version merely has more segments than the latest.
-/// [appHasUpdate] also treats pseudo-versions as opaque labels, which ordering
-/// cannot.
-///
-/// With the preference off, [isAppUpdateable] takes over and any difference
-/// counts, downgrades included, which is the only thing that switch can mean.
-bool appHasOfferableUpdate(App app, SettingsProvider settingsProvider) =>
-    settingsProvider.hideDowngrades
-    ? appHasUpdate(app)
-    : isAppUpdateable(app, settingsProvider);
-
-bool isAppUpdateable(App app, SettingsProvider settingsProvider) {
-  final installed = app.installedVersion;
-  final latest = app.latestVersion;
-  // Same-release test as [appHasUpdate], not a raw string compare: otherwise
-  // turning "hide downgrades" off brings back the phantom update of a tag
-  // against the OS's spelling of the very same build ("v1.26" vs "1.26").
-  if (installed == null || sameVersionLabel(installed, latest)) {
-    return false;
-  }
-  if (!settingsProvider.hideDowngrades) {
-    return true;
-  }
-  final comparison = VersionService().compareVersionsNumerically(
-    installed,
-    latest,
-  );
-  return comparison == null || comparison <= 0;
+/// With the preference on (the default) this is [appHasUpdate]. With it off,
+/// any APK whose version differs from the installed build's is offered,
+/// downgrades included, which is the only thing that switch can mean. A git
+/// hash that differs on its own is still not a different version.
+bool appHasOfferableUpdate(App app, SettingsProvider settingsProvider) {
+  if (settingsProvider.hideDowngrades) return appHasUpdate(app);
+  final versions = _apkVersions(app);
+  return versions != null &&
+      (versions.latestCode != versions.installedCode ||
+          !sameVersionLabel(
+            withoutGitHash(versions.installedName),
+            withoutGitHash(versions.latestName),
+          ));
 }
 
 // ========================================================================

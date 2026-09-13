@@ -22,7 +22,6 @@ class APKPure extends AppSource {
     name = 'APKPure';
     hosts = ['apkpure.net', 'apkpure.com'];
     allowSubDomains = true;
-    naiveStandardVersionDetection = true;
     showReleaseDateAsVersionToggle = true;
     inferAppIdFromUrlPath = true;
   }

@@ -570,10 +570,9 @@ class AppsPageState extends State<AppsPage> {
       unawaited(
         appsProvider.saveApps(
           selectedApps.map((a) {
-            if (a.installedVersion != null &&
-                !appsProvider.isVersionDetectionPossible(
-                  appsProvider.apps[a.id],
-                )) {
+            // Only a track-only app's installed version is a mark: any other
+            // app's is read from the OS, and saving would put it straight back.
+            if (a.installedVersion != null && a.settings.getBool('trackOnly')) {
               a = a.copyWith(installedVersion: a.latestVersion);
             }
             return a;
@@ -1416,9 +1415,10 @@ class _BulkUpdateDialogState extends State<_BulkUpdateDialog> {
       aim.app,
       context.read<SettingsProvider>(),
     );
+    final latest = aim.app.latestVersionName ?? aim.app.latestVersion;
     final versionLabel = isUpdate
-        ? '${aim.app.installedVersion} → ${aim.app.latestVersion}'
-        : aim.app.latestVersion;
+        ? '${aim.app.installedVersion} → $latest'
+        : latest;
     return CheckboxListTile(
       dense: true,
       contentPadding: const EdgeInsets.only(left: 4, right: 4),

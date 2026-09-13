@@ -10,7 +10,6 @@ class Tencent extends AppSource {
 
   Tencent() {
     hosts = ['sj.qq.com'];
-    naiveStandardVersionDetection = true;
     showReleaseDateAsVersionToggle = true;
     inferAppIdFromUrlPath = true;
   }

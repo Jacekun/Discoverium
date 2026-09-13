@@ -560,10 +560,10 @@ extension AppsProviderInstall on AppsProvider {
           }
           if (result.isSuccess) {
             somethingInstalled = true;
-            apps[dir.appId]!.app = apps[dir.appId]!.app.copyWith(
-              installedVersion: apps[dir.appId]!.app.latestVersion,
-            );
-            await saveApps([apps[dir.appId]!.app]);
+            // Saving reads the newly installed version back from the OS. The
+            // app may have been removed while the installer ran.
+            final entry = apps[dir.appId];
+            if (entry != null) await saveApps([entry.app]);
           }
           unawaited(dir.file.delete());
         } catch (e) {
@@ -666,12 +666,17 @@ extension AppsProviderInstall on AppsProvider {
       // Background process workaround (#896): the `await installApk` below
       // will never return in BG, so pre-update the installed version.
       // TODO(#896): Remove this when platform install API supports BG completion.
-      apps[file.appId]!.app = apps[file.appId]!.app.copyWith(
-        installedVersion: apps[file.appId]!.app.latestVersion,
-      );
-      await saveApps([
-        apps[file.appId]!.app,
-      ], attemptToCorrectInstallStatus: false);
+      final entry = apps[file.appId];
+      if (entry != null) {
+        entry.app = entry.app.copyWith(
+          installedVersion: versionNameOrCode(
+            newInfo.versionName,
+            newInfo.versionCode,
+          ),
+          installedVersionCode: newInfo.versionCode,
+        );
+        await saveApps([entry.app], attemptToCorrectInstallStatus: false);
+      }
     }
     final allAPKs = [file.file.path];
     allAPKs.addAll(additionalAPKs.map((a) => a.file.path));
@@ -701,15 +706,24 @@ extension AppsProviderInstall on AppsProvider {
       throw InstallError(result.errorCode!);
     } else if (result.isSuccess) {
       installed = true;
-      apps[file.appId]!.app = apps[file.appId]!.app.copyWith(
-        installedVersion: apps[file.appId]!.app.latestVersion,
-      );
+      // The app may have been removed while the installer ran.
+      final entry = apps[file.appId];
+      if (entry != null) {
+        entry.app = entry.app.copyWith(
+          installedVersion: versionNameOrCode(
+            newInfo.versionName,
+            newInfo.versionCode,
+          ),
+          installedVersionCode: newInfo.versionCode,
+        );
+      }
       unawaited(file.file.delete(recursive: true));
       if (!isBg) settingsProvider.heavyImpact();
     }
     // Cancelled or already-installed/pending: keep the file so a retry can
     // reuse it without re-downloading (matches main).
-    await saveApps([apps[file.appId]!.app]);
+    final saved = apps[file.appId];
+    if (saved != null) await saveApps([saved.app]);
     return installed;
   }
 

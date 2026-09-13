@@ -36,6 +36,7 @@ export 'apps_provider_import_export.dart';
 export 'apps_provider_install.dart';
 export 'apps_provider_lifecycle.dart';
 export 'apps_provider_updates.dart';
+export 'apps_provider_versions.dart';
 
 // Named constants for magic numbers and hardcoded values
 const int _defaultRetries = 3;

@@ -260,10 +260,10 @@ class SearchPageState extends State<SearchPage> {
         throw ObtainiumError(tr('appAlreadyAdded'));
       }
 
-      if (app.settings.getBool('trackOnly') ||
-          !app.settings.getBool('versionDetection')) {
+      if (app.settings.getBool('trackOnly')) {
         app = app.copyWith(installedVersion: app.latestVersion);
       }
+      app = await appsProvider.resolveLatestApkVersionIfPossible(app);
 
       await appsProvider.saveApps([app], onlyIfExists: false);
     } catch (e) {

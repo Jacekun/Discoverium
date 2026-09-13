@@ -45,28 +45,16 @@ void _migrateAdditionalDataToSettings(
   });
   additionalSettings['trackOnly'] =
       json['trackOnly'] == 'true' || json['trackOnly'] == true;
-  additionalSettings['noVersionDetection'] =
-      json['noVersionDetection'] == 'true' ||
-      json['noVersionDetection'] == true;
 }
 
-/// Converts legacy booleans `noVersionDetection` / `releaseDateAsVersion`
-/// to the current `versionDetection` string dropdown and back.
-void _migrateVersionDetectionFormat(Map<String, dynamic> additionalSettings) {
-  if (additionalSettings['noVersionDetection'] == true) {
-    additionalSettings['versionDetection'] = 'noVersionDetection';
-    if (additionalSettings['releaseDateAsVersion'] == true) {
-      additionalSettings['versionDetection'] = 'releaseDateAsVersion';
-    }
-    additionalSettings.remove('noVersionDetection');
-    additionalSettings.remove('releaseDateAsVersion');
-  }
-  if (additionalSettings['versionDetection'] == 'standardVersionDetection') {
-    additionalSettings['versionDetection'] = true;
-  } else if (additionalSettings['versionDetection'] == 'noVersionDetection') {
-    additionalSettings['versionDetection'] = false;
-  } else if (additionalSettings['versionDetection'] == 'releaseDateAsVersion') {
-    additionalSettings['versionDetection'] = false;
+/// Drops the retired `versionDetection` setting, and with it the older
+/// `noVersionDetection` flag, keeping the one choice of it that is still a
+/// setting in its own right: the dropdown's `releaseDateAsVersion`. Whether
+/// there is an update is read from the APK itself now, so the rest of what that
+/// setting decided has nothing left to convert to.
+void _migrateVersionDetection(Map<String, dynamic> additionalSettings) {
+  additionalSettings.remove('noVersionDetection');
+  if (additionalSettings.remove('versionDetection') == 'releaseDateAsVersion') {
     additionalSettings['releaseDateAsVersion'] = true;
   }
 }
@@ -254,7 +242,6 @@ void _migrateHuaweiAppGallery(
       isPseudoVersion(json['installedVersion']) ||
       isPseudoVersion(json['latestVersion']);
   if (!hasLegacyState) return;
-  additionalSettings['versionDetection'] = true;
   additionalSettings.remove('releaseDateAsVersion');
   if (isPseudoVersion(json['installedVersion'])) {
     json['installedVersion'] = null;
@@ -298,7 +285,7 @@ Map<String, dynamic> appJSONCompatibilityModifiers(Map<String, dynamic> json) {
   }
 
   _migrateAdditionalDataToSettings(json, additionalSettings, formItems);
-  _migrateVersionDetectionFormat(additionalSettings);
+  _migrateVersionDetection(additionalSettings);
   _migratePseudoVersioningMethod(
     originalAdditionalSettings,
     additionalSettings,

@@ -1005,7 +1005,7 @@ class _VersionLabel extends StatelessWidget {
 
   String installedVersionText(App app) {
     final installed = app.installedVersion;
-    final latest = app.latestVersion;
+    final latest = app.latestVersionName ?? app.latestVersion;
     if (isVersionUpdate(app)) {
       return '$installed → $latest';
     }

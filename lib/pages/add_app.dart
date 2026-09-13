@@ -302,10 +302,10 @@ class AddAppPageState extends State<AddAppPage> {
             '${tr('appAlreadyAdded')}: ${existing?.app.name ?? app.id} (${app.id})',
           );
         }
-        if (app.settings.getBool('trackOnly') ||
-            !app.settings.getBool('versionDetection')) {
+        if (app.settings.getBool('trackOnly')) {
           app = app.copyWith(installedVersion: app.latestVersion);
         }
+        app = await appsProvider.resolveLatestApkVersionIfPossible(app);
         app = app.copyWith(categories: pickedCategories);
         await appsProvider.saveApps([app], onlyIfExists: false);
       }

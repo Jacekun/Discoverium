@@ -223,7 +223,10 @@ class _AppPageState extends State<AppPage> {
       a.name,
       a.author,
       app.installedVersion,
+      app.installedVersionCode,
       app.latestVersion,
+      app.latestVersionCode,
+      app.latestVersionName,
       app.url,
       app.overrideSource,
       app.releaseDate?.microsecondsSinceEpoch,
@@ -255,30 +258,11 @@ class _AppPageState extends State<AppPage> {
     return copy;
   }
 
-  Future<void> getUpdate(
-    BuildContext context, {
-    bool resetVersion = false,
-  }) async {
+  Future<void> getUpdate(BuildContext context) async {
     try {
       updating = true;
       if (mounted) setState(() {});
       await appsProvider.checkUpdate(appId);
-      if (resetVersion) {
-        final currentAim = appsProvider.apps[appId];
-        if (currentAim != null) {
-          var updatedApp = currentAim.app.copyWith(
-            additionalSettings: Map<String, dynamic>.from(
-              currentAim.app.additionalSettings,
-            )..['versionDetection'] = true,
-          );
-          if (updatedApp.installedVersion != null) {
-            updatedApp = updatedApp.copyWith(
-              installedVersion: updatedApp.latestVersion,
-            );
-          }
-          await appsProvider.saveApps([updatedApp]);
-        }
-      }
     } catch (err) {
       if (err is RepositoryRenamedError && context.mounted) {
         await appsProvider.updatePendingRepoRename(appId, err.newUrl);
@@ -288,25 +272,6 @@ class _AppPageState extends State<AppPage> {
     } finally {
       updating = false;
       if (mounted) setState(() {});
-    }
-  }
-
-  Future<void> showMarkUpdatedDialog(BuildContext context) async {
-    final confirmed = await showConfirmDialog(
-      context,
-      title: tr('alreadyUpToDateQuestion'),
-      confirmText: tr('yesMarkUpdated'),
-      autofocusConfirm: settingsProvider.isTV,
-    );
-    if (!confirmed) return;
-    settingsProvider.selectionClick();
-    final aim = appsProvider.apps[appId];
-    var updatedApp = aim?.app;
-    if (updatedApp != null) {
-      updatedApp = updatedApp.copyWith(
-        installedVersion: updatedApp.latestVersion,
-      );
-      unawaited(appsProvider.saveApps([updatedApp]));
     }
   }
 
@@ -378,7 +343,6 @@ class _AppPageState extends State<AppPage> {
   ) {
     if (app != null && values != null) {
       final s = source;
-      final Map<String, dynamic> originalSettings = app.app.additionalSettings;
       final savedValues = Map<String, dynamic>.from(values);
       app.app = app.app.copyWith(additionalSettings: savedValues);
       if (s?.enforceTrackOnly == true) {
@@ -391,49 +355,9 @@ class _AppPageState extends State<AppPage> {
           showMessage(tr('appsFromSourceAreTrackOnly'), context);
         }
       }
-      final versionDetectionEnabled =
-          app.app.settings.getBool('versionDetection') &&
-          originalSettings['versionDetection'] != true;
-      final releaseDateVersionEnabled =
-          app.app.settings.getBool('releaseDateAsVersion') &&
-          originalSettings['releaseDateAsVersion'] != true;
-      final releaseDateVersionDisabled =
-          !app.app.settings.getBool('releaseDateAsVersion') &&
-          originalSettings['releaseDateAsVersion'] == true;
-      if (releaseDateVersionEnabled) {
-        if (app.app.releaseDate != null) {
-          // Carry "no update pending" across the switch to date-versioning,
-          // not "the two strings match" — an installed build ahead of the
-          // latest release has no update, and rewriting latestVersion to an
-          // epoch below would otherwise strand it showing a phantom one.
-          final bool isUpdated =
-              app.app.installedVersion != null &&
-              !appHasOfferableUpdate(app.app, context.read<SettingsProvider>());
-          app.app = app.app.copyWith(
-            latestVersion: app.app.releaseDate!.microsecondsSinceEpoch
-                .toString(),
-          );
-          if (isUpdated) {
-            app.app = app.app.copyWith(installedVersion: app.app.latestVersion);
-          }
-        }
-      } else if (releaseDateVersionDisabled) {
-        app.app = app.app.copyWith(
-          installedVersion:
-              app.installedInfo?.versionName ?? app.app.installedVersion,
-        );
-      }
-      if (versionDetectionEnabled) {
-        app.app = app.app.copyWith(
-          additionalSettings:
-              Map<String, dynamic>.from(app.app.additionalSettings)
-                ..['versionDetection'] = true
-                ..['releaseDateAsVersion'] = false,
-        );
-      }
       appsProvider.saveApps([app.app]).then((_) {
         if (context.mounted) {
-          getUpdate(context, resetVersion: versionDetectionEnabled);
+          getUpdate(context);
         }
       });
     }
@@ -569,11 +493,11 @@ class _AppPageState extends State<AppPage> {
     bool areDownloadsRunning,
   ) {
     final installed = app?.app.installedVersion;
-    final latest = app?.app.latestVersion;
     final hasAction =
         app != null &&
         !updating &&
-        (installed == null || isNewer(installed, latest!)) &&
+        (installed == null ||
+            appHasOfferableUpdate(app.app, settingsProvider)) &&
         !areDownloadsRunning;
     final trackOnly = app?.app.settings.getBool('trackOnly') == true;
     return FilledButton.icon(
@@ -614,7 +538,6 @@ class _AppPageState extends State<AppPage> {
     AppsProvider appsProvider,
     SettingsProvider settingsProvider,
     bool showAppWebpageFinal,
-    bool isVersionDetectionStandard,
     bool trackOnly,
   ) {
     return <Widget>[
@@ -658,18 +581,7 @@ class _AppPageState extends State<AppPage> {
           icon: const Icon(Icons.more_horiz),
           tooltip: tr('more'),
         ),
-      if (app != null &&
-          appHasOfferableUpdate(app.app, context.read<SettingsProvider>()) &&
-          !isVersionDetectionStandard &&
-          !trackOnly)
-        IconButton(
-          onPressed: app.downloadProgress != null || updating
-              ? null
-              : () => showMarkUpdatedDialog(context),
-          tooltip: tr('markUpdated'),
-          icon: const Icon(Icons.done),
-        ),
-      if ((!isVersionDetectionStandard || trackOnly) &&
+      if (trackOnly &&
           app?.app.installedVersion != null &&
           app?.app.installedVersion == app?.app.latestVersion)
         IconButton(
@@ -880,7 +792,6 @@ class _AppPageState extends State<AppPage> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final trackOnly = app?.app.settings.getBool('trackOnly') == true;
-    final pseudo = app?.app != null && isVersionPseudo(app!.app);
     final heldUntil = app?.app == null
         ? null
         : appHeldUntil(app!.app, settingsProvider);
@@ -892,7 +803,6 @@ class _AppPageState extends State<AppPage> {
         false,
         children: [
           if (trackOnly) _detailNote(tr('xIsTrackOnly', args: [tr('app')])),
-          if (pseudo) _detailNote(tr('pseudoVersionInUse')),
           if (heldUntil != null)
             _detailNote(
               tr(
@@ -909,7 +819,8 @@ class _AppPageState extends State<AppPage> {
                 app == null ||
                 !appHasOfferableUpdate(app.app, settingsProvider);
             if (!upToDate) {
-              l += '\n${app.app.latestVersion} ${tr('latest')}';
+              l +=
+                  '\n${app.app.latestVersionName ?? app.app.latestVersion} ${tr('latest')}';
             }
             return Text(
               l,
@@ -1393,7 +1304,6 @@ class _AppPageState extends State<AppPage> {
     SettingsProvider settingsProvider,
     AppSource? source,
     bool showAppWebpageFinal,
-    bool isVersionDetectionStandard,
     bool trackOnly,
     bool areDownloadsRunning,
   ) {
@@ -1454,7 +1364,6 @@ class _AppPageState extends State<AppPage> {
                 appsProvider,
                 settingsProvider,
                 showAppWebpageFinal,
-                isVersionDetectionStandard,
                 trackOnly,
               ),
               const Spacer(),
@@ -1490,13 +1399,12 @@ class _AppPageState extends State<AppPage> {
     final AppInMemory? app = cachedApp(
       context.select<AppsProvider, AppInMemory?>((p) => p.apps[widget.appId]),
     );
-    final installed = app?.app.installedVersion;
-    final latest = app?.app.latestVersion;
     if (app != null &&
         app.downloadProgress == null &&
         !updating &&
         !areDownloadsRunning &&
-        (installed == null || isNewer(installed, latest!))) {
+        (app.app.installedVersion == null ||
+            appHasOfferableUpdate(app.app, settingsProvider))) {
       _maybeProbeDownloadSize(app);
     }
     final source = this.source;
@@ -1511,9 +1419,6 @@ class _AppPageState extends State<AppPage> {
       });
     }
     final trackOnly = app?.app.settings.getBool('trackOnly') == true;
-
-    final bool isVersionDetectionStandard =
-        app?.app.settings.getBool('versionDetection') == true;
 
     final certs = app != null && app.certificateHashes.isNotEmpty;
     final hasAssets =
@@ -1613,7 +1518,6 @@ class _AppPageState extends State<AppPage> {
                       settingsProvider,
                       source,
                       showAppWebpageFinal,
-                      isVersionDetectionStandard,
                       trackOnly,
                       areDownloadsRunning,
                     ),

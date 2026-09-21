@@ -5,13 +5,15 @@ import 'dart:typed_data';
 
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:android_package_manager/android_package_manager.dart';
+import 'package:obtainium/app_sources/html.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:http/http.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:obtainium/custom_errors.dart';
 import 'package:obtainium/core/logging/app_logger.dart';
 import 'package:obtainium/components/generated_form_renderer.dart';
 import 'package:obtainium/utils/color_utils.dart';
+import 'package:obtainium/providers/app_json_migration.dart';
 import 'package:obtainium/providers/apps_provider.dart';
 import 'package:obtainium/providers/notifications_provider.dart';
 import 'package:obtainium/providers/settings_provider.dart';
@@ -25,24 +27,64 @@ const _corruptFileSuffix = '.corrupt';
 /// re-requested on every app-list load.
 final Set<String> _failedDiscoveriumIconUrls = <String>{};
 
+/// Makes temporary save files unique even when concurrent [saveApps] calls
+/// target the same app.
+int _saveTempCounter = 0;
+
+/// Whether a cached app icon can be reused instead of re-reading it from the
+/// platform.
+///
+/// An app's icon is packaged in its APK, so it can only change when the app is
+/// updated. The cache is therefore only stale when the installed package's
+/// [PackageInfo.lastUpdateTime] is newer than the cache file (or when
+/// [ignoreCache] forces a refresh), keeping the relatively expensive
+/// `getAppIcon` platform call off the hot path.
+bool isIconCacheUsable({
+  required bool cacheExists,
+  required DateTime? cacheModified,
+  int? packageLastUpdateTime,
+  bool ignoreCache = false,
+}) {
+  if (ignoreCache || !cacheExists) {
+    return false;
+  }
+  if (packageLastUpdateTime == null || cacheModified == null) {
+    return true;
+  }
+  return cacheModified.millisecondsSinceEpoch >= packageLastUpdateTime;
+}
+
 extension AppsProviderLifecycle on AppsProvider {
+  bool _getNaiveStandardVersionDetection(App app, {AppSource? source}) {
+    final resolved =
+        source ??
+        SourceProvider().getSource(app.url, overrideSource: app.overrideSource);
+    return app.settings.getBool('naiveStandardVersionDetection') ||
+        resolved.naiveStandardVersionDetection;
+  }
+
   Future<Directory> getAppsDir() async {
-    if (cachedAppsDir != null) return cachedAppsDir!;
+    final cached = cachedAppsDir;
+    if (cached != null && cached.existsSync()) return cached;
+    // The cached directory can disappear at runtime (external storage
+    // remounted after a system update, storage cleanup). Drop the stale
+    // reference and re-create it instead of renaming into a missing path.
+    cachedAppsDir = null;
     final Directory appsDir = Directory(
       '${(await getAppStorageDir()).path}/app_data',
     );
-    if (!appsDir.existsSync()) {
-      try {
-        appsDir.createSync();
-      } catch (_) {
-        final fallbackDir = Directory(
-          '${(await getApplicationDocumentsDirectory()).path}/app_data',
-        );
-        if (!fallbackDir.existsSync()) {
-          fallbackDir.createSync(recursive: true);
-        }
-        return cachedAppsDir = fallbackDir;
+    try {
+      if (!appsDir.existsSync()) {
+        appsDir.createSync(recursive: true);
       }
+    } catch (_) {
+      final fallbackDir = Directory(
+        '${(await getApplicationDocumentsDirectory()).path}/app_data',
+      );
+      if (!fallbackDir.existsSync()) {
+        fallbackDir.createSync(recursive: true);
+      }
+      return cachedAppsDir = fallbackDir;
     }
     return cachedAppsDir = appsDir;
   }
@@ -76,6 +118,58 @@ extension AppsProviderLifecycle on AppsProvider {
     );
   }
 
+  /// Writes [app]'s JSON file, re-resolving the apps directory and retrying
+  /// once if the filesystem reports a missing path. Without the retry, a
+  /// directory that vanished between the existence check and the rename makes
+  /// saves/imports fail with a user-visible PathNotFoundException. See #2860.
+  Future<void> _writeAppJson(App app) async {
+    Future<void> attempt() async {
+      final String filePath = '${(await getAppsDir()).path}/${app.id}.json';
+      // Unique temp path: two concurrent saves of the same app must not
+      // interleave writes or race each other's rename. #2089
+      final String tmpPath =
+          '$filePath.${DateTime.now().microsecondsSinceEpoch}-${_saveTempCounter++}.tmp';
+      await File(tmpPath).writeAsString(jsonEncode(app.toJson()));
+      await File(tmpPath).rename(filePath);
+    }
+
+    try {
+      await attempt();
+    } on FileSystemException {
+      cachedAppsDir = null;
+      await attempt();
+    }
+  }
+
+  bool isVersionDetectionPossible(AppInMemory? app) {
+    if (app?.app == null) {
+      return false;
+    }
+    final source = SourceProvider().getSource(
+      app!.app.url,
+      overrideSource: app.app.overrideSource,
+    );
+    final bool isHTMLWithNoVersionDetection =
+        (source is HTML &&
+        app.app.settings
+                .getStringOrNull('versionExtractionRegEx')
+                ?.isNotEmpty !=
+            true);
+    return versionDetectionPossible(
+      trackOnly: app.app.settings.getBool('trackOnly'),
+      releaseDateAsVersion: app.app.settings.getBool('releaseDateAsVersion'),
+      isHtmlWithNoVersionDetection: isHTMLWithNoVersionDetection,
+      versionDetectionDisallowed: source.versionDetectionDisallowed,
+      realInstalledVersion: realInstalledVersionOf(app.app, app.installedInfo),
+      trackedVersion: app.app.installedVersion,
+      latestVersion: app.app.latestVersion,
+      naiveStandardVersionDetection: _getNaiveStandardVersionDetection(
+        app.app,
+        source: source,
+      ),
+    );
+  }
+
   Future<void> loadApps({String? singleId}) async {
     await waitForAppsToLoad();
     appsLoadingCompleter = Completer<void>();
@@ -102,7 +196,7 @@ extension AppsProviderLifecycle on AppsProvider {
                       item.path.split('/').last.toLowerCase() ==
                           '${singleId.toLowerCase()}.json')) {
                 try {
-                  app = App.fromJson(
+                  app = appFromStoredJson(
                     jsonDecode(await File(item.path).readAsString()),
                   );
                 } catch (err) {
@@ -224,9 +318,16 @@ extension AppsProviderLifecycle on AppsProvider {
   }
 
   Future<void> updateAppIcon(String? appId, {bool ignoreCache = false}) async {
-    if (apps[appId]?.icon == null) {
-      final cachedIcon = File('${iconsCacheDir.path}/$appId.png');
-      final alreadyCached = cachedIcon.existsSync() && !ignoreCache;
+    final app = apps[appId];
+    final cachedIcon = File('${iconsCacheDir.path}/$appId.png');
+    final cacheExists = cachedIcon.existsSync();
+    final alreadyCached = isIconCacheUsable(
+      ignoreCache: ignoreCache,
+      cacheExists: cacheExists,
+      cacheModified: cacheExists ? cachedIcon.lastModifiedSync() : null,
+      packageLastUpdateTime: app?.installedInfo?.lastUpdateTime,
+    );
+    if (app?.icon == null || !alreadyCached) {
       Uint8List? icon;
       if (alreadyCached) {
         icon = await cachedIcon.readAsBytes();
@@ -234,8 +335,7 @@ extension AppsProviderLifecycle on AppsProvider {
         // Apps added from Discoverium's curated repo carry an icon URL, which
         // gives a real icon even before the app is installed on device.
         icon = await _downloadDiscoveriumIcon(appId);
-        icon ??= await apps[appId]?.installedInfo?.applicationInfo
-            ?.getAppIcon();
+        icon ??= await app?.installedInfo?.applicationInfo?.getAppIcon();
       }
       if (icon != null && !alreadyCached) {
         unawaited(cachedIcon.writeAsBytes(icon));
@@ -311,11 +411,7 @@ extension AppsProviderLifecycle on AppsProvider {
           app = getCorrectedInstallStatusAppIfPossible(app, info) ?? app;
         }
         if (!onlyIfExists || this.apps.containsKey(app.id)) {
-          final String filePath = '${(await getAppsDir()).path}/${app.id}.json';
-          await File(
-            '$filePath.tmp',
-          ).writeAsString(jsonEncode(app.toJson())); // #2089
-          await File('$filePath.tmp').rename(filePath);
+          await _writeAppJson(app);
         }
         if (this.apps.containsKey(app.id)) {
           this.apps[app.id] = this.apps[app.id]!.copyWith(
@@ -334,6 +430,10 @@ extension AppsProviderLifecycle on AppsProvider {
             app.settings.getStringOrNull('discoveriumIconUrl') == null) {
           final cachedIcon = File('${iconsCacheDir.path}/${app.id}.png');
           if (cachedIcon.existsSync()) cachedIcon.deleteSync();
+        } else if (!canReuse && icon != null) {
+          // Persist the freshly fetched icon so future cold starts can reuse
+          // it (and so a changed icon replaces the stale cached one).
+          await File('${iconsCacheDir.path}/${app.id}.png').writeAsBytes(icon);
         }
       }),
     );

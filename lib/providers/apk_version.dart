@@ -520,7 +520,7 @@ class HttpApkByteSource implements ApkByteSource {
       _headers = Map.of(_headers)
         ..removeWhere(
           (key, _) =>
-              HttpService.sensitiveRedirectHeaders.contains(key.toLowerCase()),
+              !HttpService.safeRedirectHeaders.contains(key.toLowerCase()),
         );
     }
     _url = finalUrl.toString();

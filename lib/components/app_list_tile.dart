@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart' hide TextDirection;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:markdown/markdown.dart' as md;
@@ -49,32 +49,34 @@ void showChangeLogDialog(
               ? const SizedBox(height: 16)
               : const SizedBox.shrink(),
           appSource.changeLogIfAnyIsMarkDown
-              ? MarkdownBody(
-                  styleSheet: MarkdownStyleSheet(
-                    blockquoteDecoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
+              ? LegacyMaterialBridge(
+                  child: MarkdownBody(
+                    styleSheet: MarkdownStyleSheet(
+                      blockquoteDecoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                      ),
                     ),
-                  ),
-                  data: changeLog,
-                  onTapLink: (text, href, title) {
-                    if (href != null) {
-                      unawaited(
-                        launchUrlString(
-                          href.startsWith('http://') ||
-                                  href.startsWith('https://')
-                              ? href
-                              : '${Uri.parse(app.url).origin}/$href',
-                          mode: LaunchMode.externalApplication,
-                        ),
-                      );
-                    }
-                  },
-                  extensionSet: md.ExtensionSet(
-                    md.ExtensionSet.gitHubFlavored.blockSyntaxes,
-                    [
-                      md.EmojiSyntax(),
-                      ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
-                    ],
+                    data: changeLog,
+                    onTapLink: (text, href, title) {
+                      if (href != null) {
+                        unawaited(
+                          launchUrlString(
+                            href.startsWith('http://') ||
+                                    href.startsWith('https://')
+                                ? href
+                                : '${Uri.parse(app.url).origin}/$href',
+                            mode: LaunchMode.externalApplication,
+                          ),
+                        );
+                      }
+                    },
+                    extensionSet: md.ExtensionSet(
+                      md.ExtensionSet.gitHubFlavored.blockSyntaxes,
+                      [
+                        md.EmojiSyntax(),
+                        ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
+                      ],
+                    ),
                   ),
                 )
               : Text(changeLog),
@@ -96,12 +98,17 @@ VoidCallback? getChangeLogFn(BuildContext context, App app) {
     changesUrl = trimmedChangeLog;
     changeLog = null;
   }
-  if (changeLog == null && changesUrl == null) return null;
+  if (changeLog == null &&
+      changesUrl == null &&
+      (app.releaseUrl == null || app.releaseUrl!.isEmpty)) {
+    return null;
+  }
   return () {
     final appSource = SourceProvider().getSource(
       app.url,
       overrideSource: app.overrideSource,
     );
+    changesUrl ??= app.releaseUrl;
     changesUrl ??= appSource.changeLogPageFromStandardUrl(app.url);
     if (changeLog != null) {
       showChangeLogDialog(context, app, changesUrl, appSource, changeLog);
@@ -117,12 +124,14 @@ class AppIconWidget extends StatefulWidget {
   final String appId;
   final bool installed;
   final AppsProvider appsProvider;
+  final double size;
 
   const AppIconWidget({
     super.key,
     required this.appId,
     required this.installed,
     required this.appsProvider,
+    this.size = 44,
   });
 
   @override
@@ -169,7 +178,7 @@ class _AppIconWidgetState extends State<AppIconWidget> {
           future: _iconFuture,
           builder: (ctx, val) => AppIcon(
             bytes: widget.appsProvider.apps[widget.appId]?.icon,
-            size: 44,
+            size: widget.size,
             dimmed: !widget.installed,
           ),
         ),
@@ -202,6 +211,10 @@ class AppListTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onToggleSelected;
 
+  /// On TV, the row checkbox is only shown while the list is in selection
+  /// mode. Outside of it, tapping the tile opens the app instead.
+  final bool selectionMode;
+
   /// Shape for the tile's selection/pinned highlight, so it matches the
   /// enclosing card's (or group segment's) corners. Falls back to the theme.
   final BorderRadius? borderRadius;
@@ -216,6 +229,7 @@ class AppListTile extends StatelessWidget {
     required this.autofocus,
     required this.onTap,
     required this.onToggleSelected,
+    this.selectionMode = false,
     this.borderRadius,
   });
 
@@ -503,17 +517,24 @@ class AppListTile extends StatelessWidget {
                 ),
               );
               if (settingsProvider.isTV) {
-                return Row(
-                  children: [
-                    Checkbox(
-                      value: multiSelected,
-                      onChanged: (_) {
-                        settingsProvider.selectionClick();
-                        onToggleSelected();
-                      },
-                    ),
-                    Expanded(child: tile),
-                  ],
+                return TvFocusRing(
+                  borderRadius:
+                      borderRadius?.topLeft.x ?? connectedTileBigRadius,
+                  child: Row(
+                    children: [
+                      if (selectionMode)
+                        ExcludeFocus(
+                          child: Checkbox(
+                            value: multiSelected,
+                            onChanged: (_) {
+                              settingsProvider.selectionClick();
+                              onToggleSelected();
+                            },
+                          ),
+                        ),
+                      Expanded(child: tile),
+                    ],
+                  ),
                 );
               }
               return tile;
@@ -672,29 +693,36 @@ class AppListGroupSection extends StatelessWidget {
           segment(
             0,
             colorScheme.surfaceContainerHigh,
-            InkWell(
-              onTap: onToggle,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                child: Row(
-                  children: [
-                    AnimatedRotation(
-                      turns: expanded ? 0.25 : 0,
-                      duration: ExpressiveMotion.short,
-                      child: const Icon(Icons.chevron_right_rounded),
+            Semantics(
+              button: true,
+              expanded: expanded,
+              label: title,
+              child: TvFocusRing(
+                child: InkWell(
+                  onTap: onToggle,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                    child: Row(
+                      children: [
+                        AnimatedRotation(
+                          turns: expanded ? 0.25 : 0,
+                          duration: ExpressiveMotion.short,
+                          child: const Icon(Icons.chevron_right_rounded),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Text(appCount.toString()),
+                      ],
                     ),
-                    Text(appCount.toString()),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -836,28 +864,52 @@ class AppListBuilder {
 
     final isDesc = sortOrder == SortOrderSettings.descending;
     if (sortColumn == SortColumnSettings.releaseDate) {
-      final entries = apps.map((a) => MapEntry(a.app.releaseDate, a)).toList()
-        ..sort((a, b) {
-          final aDate = a.key;
-          final bDate = b.key;
-          if (aDate == null && bDate == null) return 0;
-          if (aDate == null) return 1;
-          if (bDate == null) return -1;
-          return isDesc ? bDate.compareTo(aDate) : aDate.compareTo(bDate);
-        });
-      apps = entries.map((e) => e.value).toList();
+      // Carry the original index so equal keys keep a stable order (Dart's
+      // List.sort is not stable), instead of swapping places between rebuilds.
+      final entries =
+          apps
+              .asMap()
+              .entries
+              .map(
+                (e) =>
+                    MapEntry(e.key, MapEntry(e.value.app.releaseDate, e.value)),
+              )
+              .toList()
+            ..sort((a, b) {
+              final aDate = a.value.key;
+              final bDate = b.value.key;
+              int cmp;
+              if (aDate == null && bDate == null) {
+                cmp = 0;
+              } else if (aDate == null) {
+                cmp = 1;
+              } else if (bDate == null) {
+                cmp = -1;
+              } else {
+                cmp = isDesc ? bDate.compareTo(aDate) : aDate.compareTo(bDate);
+              }
+              return cmp != 0 ? cmp : a.key.compareTo(b.key);
+            });
+      apps = entries.map((e) => e.value.value).toList();
     } else {
       String keyFn(AppInMemory a) => switch (sortColumn) {
         SortColumnSettings.authorName => (a.author + a.name).toLowerCase(),
         SortColumnSettings.nameAuthor => (a.name + a.author).toLowerCase(),
         _ => '',
       };
-      final entries = apps.map((a) => MapEntry(keyFn(a), a)).toList()
-        ..sort((a, b) => a.key.compareTo(b.key));
-      apps = entries.map((e) => e.value).toList();
-      if (isDesc) {
-        apps = apps.reversed.toList();
-      }
+      final entries =
+          apps
+              .asMap()
+              .entries
+              .map((e) => MapEntry(e.key, MapEntry(keyFn(e.value), e.value)))
+              .toList()
+            ..sort((a, b) {
+              final cmp = isDesc
+                  ? b.value.key.compareTo(a.value.key)
+                  : a.value.key.compareTo(b.value.key);
+              return cmp != 0 ? cmp : a.key.compareTo(b.key);
+            });
+      apps = entries.map((e) => e.value.value).toList();
     }
     return apps;
   }

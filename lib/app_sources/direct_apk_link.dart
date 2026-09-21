@@ -40,6 +40,14 @@ class DirectAPKLink extends AppSource {
         value: 'partialAPKHash',
       ),
     ],
+    [
+      GeneratedFormTextField(
+        'zippedApkFilterRegEx',
+        label: tr('zippedApkFilterRegEx'),
+        required: false,
+        additionalValidators: [(value) => regExValidator(value)],
+      ),
+    ],
   ];
 
   @override

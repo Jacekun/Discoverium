@@ -77,6 +77,31 @@ extension AppsProviderUpdates on AppsProvider {
     );
   }
 
+  /// Fetches [appId] with a short retry for transient TLS handshake failures.
+  ///
+  /// Concurrent TLS handshakes to the same host can fail on certain
+  /// devices/networks. Retry up to 2 times with staggered random delays to
+  /// avoid all retries colliding. Any error that is not a handshake failure
+  /// (including one raised by a retry) propagates to the caller so it can take
+  /// the normal per-app error path instead of aborting the whole batch.
+  Future<App?> fetchUpdateWithHandshakeRetry(String appId) async {
+    try {
+      return await fetchUpdate(appId);
+    } on HandshakeException {
+      const maxRetries = 2;
+      final rng = Random();
+      for (var attempt = 0; attempt < maxRetries; attempt++) {
+        await Future.delayed(Duration(milliseconds: 250 + rng.nextInt(501)));
+        try {
+          return await fetchUpdate(appId);
+        } on HandshakeException {
+          if (attempt == maxRetries - 1) rethrow;
+        }
+      }
+      return null;
+    }
+  }
+
   Future<App?> checkUpdate(String appId) async {
     final App? currentApp = apps[appId]?.app;
     if (currentApp == null) return null;
@@ -135,8 +160,13 @@ extension AppsProviderUpdates on AppsProvider {
     SettingsProvider? sp,
   }) async {
     final SettingsProvider settingsProvider = sp ?? this.settingsProvider;
-    if (updateCheckCompleter != null) {
-      return updateCheckCompleter!.future;
+    // A check is already running. Its result may not cover the apps this
+    // caller asked for (e.g. a deep-link refresh for one app arriving during a
+    // full background check), so wait for it to finish and then run our own
+    // instead of silently returning the other check's result.
+    while (updateCheckCompleter != null) {
+      final runningCheck = updateCheckCompleter!;
+      await runningCheck.future.catchError((_) => <App>[]);
     }
     final completer = updateCheckCompleter = Completer<List<App>>();
     var completed = 0;
@@ -153,28 +183,11 @@ extension AppsProviderUpdates on AppsProvider {
       List<String> appIds;
       if (specificIds != null) {
         appIds = List.from(specificIds);
-      } else if (forceAll) {
-        appIds = apps.values.map((e) => e.app.id).toList();
-        appIds.sort(
-          (a, b) =>
-              (apps[a]!.app.lastUpdateCheck ??
-                      DateTime.fromMicrosecondsSinceEpoch(0))
-                  .compareTo(
-                    apps[b]!.app.lastUpdateCheck ??
-                        DateTime.fromMicrosecondsSinceEpoch(0),
-                  ),
-        );
-        if (settingsProvider.onlyCheckInstalledOrTrackOnlyApps) {
-          appIds.removeWhere((id) {
-            final a = apps[id]?.app;
-            return a?.installedVersion == null &&
-                a?.settings.getBool('trackOnly') != true;
-          });
-        }
       } else {
         appIds = getAppsSortedByUpdateCheckTime(
           onlyCheckInstalledOrTrackOnlyApps:
               settingsProvider.onlyCheckInstalledOrTrackOnlyApps,
+          forceAll: forceAll,
         );
       }
       total = appIds.length;
@@ -196,43 +209,13 @@ extension AppsProviderUpdates on AppsProvider {
       Future<MapEntry<App, bool>?> fetchOne(String appId) async {
         final currentApp = apps[appId]?.app;
         try {
-          final newApp = await fetchUpdate(appId);
+          final newApp = await fetchUpdateWithHandshakeRetry(appId);
           if (newApp != null) {
             final isUpdate =
                 currentApp != null &&
                 latestApkVersionChanged(currentApp, newApp) &&
                 appHasOfferableUpdate(newApp, settingsProvider);
             return MapEntry(newApp, isUpdate);
-          }
-        } on HandshakeException {
-          // Concurrent TLS handshakes to the same host can fail on
-          // certain devices/networks. Retry up to 2 times with
-          // staggered random delays to avoid all retries colliding.
-          const maxRetries = 2;
-          final rng = Random();
-          for (var attempt = 0; attempt < maxRetries; attempt++) {
-            await Future.delayed(
-              Duration(milliseconds: 250 + rng.nextInt(501)),
-            );
-            try {
-              final newApp = await fetchUpdate(appId);
-              if (newApp != null) {
-                final isUpdate =
-                    currentApp != null &&
-                    latestApkVersionChanged(currentApp, newApp) &&
-                    appHasOfferableUpdate(newApp, settingsProvider);
-                return MapEntry(newApp, isUpdate);
-              }
-              break;
-            } on HandshakeException catch (retryError) {
-              // Out of retries: record it against this app like any other
-              // failure. Rethrowing would escape the per-app handler and abort
-              // the whole check, discarding every other app's result.
-              if (attempt == maxRetries - 1) {
-                errors.add(appId, retryError, appName: apps[appId]?.name);
-                return null;
-              }
-            }
           }
         } catch (e) {
           if ((e is RateLimitError || e is SocketException) &&
@@ -283,7 +266,11 @@ extension AppsProviderUpdates on AppsProvider {
         await saveApps(fetched, reuseInstalledInfo: true);
       }
       if (failedApps.isNotEmpty) {
-        await saveApps(failedApps, attemptToCorrectInstallStatus: false);
+        await saveApps(
+          failedApps,
+          attemptToCorrectInstallStatus: false,
+          reuseInstalledInfo: true,
+        );
       }
       if (errors.idsByErrorString.isNotEmpty) {
         final ex = CheckUpdatesException(updates, errors);

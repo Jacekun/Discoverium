@@ -5,7 +5,9 @@ import 'dart:typed_data';
 import 'package:easy_localization/easy_localization.dart';
 
 import 'package:obtainium/custom_errors.dart';
+import 'package:obtainium/core/logging/app_logger.dart';
 
+import 'package:obtainium/providers/app_json_migration.dart';
 import 'package:obtainium/providers/apps_provider.dart';
 import 'package:obtainium/providers/settings_provider.dart';
 import 'package:obtainium/providers/source_provider.dart';
@@ -24,6 +26,10 @@ extension AppsProviderImportExport on AppsProvider {
     List<String>? appIds,
     int? overrideExportSettings,
   }) {
+    int shouldExportSettings = settingsProvider.exportSettings;
+    if (overrideExportSettings != null) {
+      shouldExportSettings = overrideExportSettings;
+    }
     final appList = apps.values
         .where((e) => appIds == null || appIds.contains(e.app.id))
         .where(
@@ -31,12 +37,21 @@ extension AppsProviderImportExport on AppsProvider {
               !settingsProvider.exportInstalledOnly ||
               e.app.installedVersion != null,
         )
-        .map((e) => e.app.toJson())
+        .map((e) {
+          final json = e.app.toJson();
+          if (shouldExportSettings < 2) {
+            // Per-app credentials (e.g. github-creds) live inside
+            // additionalSettings, not prefs, so they must be stripped here
+            // too when the export is not meant to include secrets.
+            final additionalSettings =
+                jsonDecode(json['additionalSettings'] as String)
+                    as Map<String, dynamic>;
+            additionalSettings.removeWhere((key, _) => key.endsWith('-creds'));
+            json['additionalSettings'] = jsonEncode(additionalSettings);
+          }
+          return json;
+        })
         .toList();
-    int shouldExportSettings = settingsProvider.exportSettings;
-    if (overrideExportSettings != null) {
-      shouldExportSettings = overrideExportSettings;
-    }
     Map<String, dynamic>? settingsMap;
     if (shouldExportSettings > 0) {
       final settingsValueKeys = settingsProvider.prefs?.getKeys().toSet();
@@ -60,6 +75,28 @@ extension AppsProviderImportExport on AppsProvider {
     return schema.toJson();
   }
 
+  /// Returns the app IDs contained in an import payload without applying it.
+  ///
+  /// Supports the current schema (`{schemaVersion, apps: [...]}`), the legacy
+  /// `{apps: [...]}` wrapper and the older bare list format. Throws if the
+  /// payload isn't decodable JSON, mirroring [import].
+  List<String> appIdsInImportJSON(String appsJSON) {
+    final decoded = jsonDecode(appsJSON);
+    final List<dynamic> appMaps;
+    if (decoded is Map) {
+      appMaps = (decoded['apps'] as List<dynamic>?) ?? const [];
+    } else if (decoded is List) {
+      appMaps = decoded;
+    } else {
+      return const [];
+    }
+    return appMaps
+        .whereType<Map>()
+        .map((e) => e['id'])
+        .whereType<String>()
+        .toList();
+  }
+
   /// Exports all app data (and optionally settings) as a JSON file to the configured export directory.
   Future<String?> export({
     bool pickOnly = false,
@@ -75,6 +112,11 @@ extension AppsProviderImportExport on AppsProvider {
         return null;
       }
       if (exportDir == null) {
+        if (settingsProvider.prefs?.getString('exportDir') != null) {
+          AppLogger.info(
+            'Auto-export skipped: export directory permission unavailable',
+          );
+        }
         return null;
       }
       final files = await saf
@@ -86,8 +128,11 @@ extension AppsProviderImportExport on AppsProvider {
           })
           .toList();
       if (files.isNotEmpty) {
-        for (var f in files) {
-          unawaited(saf.delete(f.uri));
+        for (final f in files) {
+          // Await so the old files are gone before the replacement is created;
+          // an unawaited delete could race the new file (same custom name) and
+          // an export failure would otherwise already have lost the backup.
+          await saf.delete(f.uri);
         }
       }
     }
@@ -136,12 +181,12 @@ extension AppsProviderImportExport on AppsProvider {
     try {
       if (hasSchemaVersion) {
         schema = ExportSchema.fromJson(decodedJSON as Map<String, dynamic>);
-        importedApps = schema.apps.map((e) => App.fromJson(e)).toList();
+        importedApps = schema.apps.map(appFromStoredJson).toList();
       } else {
         final newFormat = decodedJSON is! List;
         importedApps =
             ((newFormat ? decodedJSON['apps'] : decodedJSON) as List<dynamic>)
-                .map((e) => App.fromJson(e))
+                .map((e) => appFromStoredJson(e))
                 .toList();
       }
     } catch (e) {

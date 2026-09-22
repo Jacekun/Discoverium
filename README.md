@@ -80,7 +80,9 @@ Discoverium is a fork of [Obtainium](https://github.com/ImranR98/Obtainium). [Ob
 ## Screenshots
 | <img src="./assets/screenshots/apps.png" alt="Apps" /> | <img src="./assets/screenshots/add_app.png" alt="Add app" />           | <img src="./assets/screenshots/search_apps.png" alt="Search apps" />    |
 | ------------------------------------------------------ | ----------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| <img src="./assets/screenshots/app.png" alt="App" />   | <img src="./assets/screenshots/import_export.png" alt="Import/Export" /> | <img src="./assets/screenshots/settings.png" alt="settings.png" /> |
+| <img src="./assets/screenshots/app.png" alt="App" />   | <img src="./assets/screenshots/import.png" alt="Import" /> | <img src="./assets/screenshots/import.png" alt="Import" />
+| ------------------------------------------------------ |
+| <img src="./assets/screenshots/settings.png" alt="settings.png" /> |
 
 ## Donations
 [<img src="./assets/badges/buymeacoffee_badge.png"

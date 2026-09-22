@@ -78,12 +78,11 @@ Discoverium is a fork of [Obtainium](https://github.com/ImranR98/Obtainium). [Ob
 - For some sources, data is gathered using Web scraping and can easily break due to changes in website design. In such cases, more reliable methods may be unavailable.
 
 ## Screenshots
-| <img src="./assets/screenshots/apps.png" alt="Apps" /> | <img src="./assets/screenshots/add_app.png" alt="Add app" />           | <img src="./assets/screenshots/search_apps.png" alt="Search apps" />    |
-| ------------------------------------------------------ | ----------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| <img src="./assets/screenshots/app.png" alt="App" />   | <img src="./assets/screenshots/import.png" alt="Import" /> | <img src="./assets/screenshots/import.png" alt="Import" />
-| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------------------------------------------
------------------------ |
-| <img src="./assets/screenshots/settings.png" alt="settings.png" /> |
+|  |  |  |
+| --- | --- | --- |
+| <img src="./assets/screenshots/apps.png" alt="Apps" /> | <img src="./assets/screenshots/add_app.png" alt="Add app" /> | <img src="./assets/screenshots/search_apps.png" alt="Search apps" /> |
+| <img src="./assets/screenshots/app.png" alt="App" /> | <img src="./assets/screenshots/import.png" alt="Import" /> | <img src="./assets/screenshots/export.png" alt="Export" /> |
+| <img src="./assets/screenshots/settings.png" alt="Settings" /> |  |  |
 
 ## Donations
 [<img src="./assets/badges/buymeacoffee_badge.png"

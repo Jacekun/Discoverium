@@ -152,6 +152,45 @@ android.applicationVariants.configureEach {
     }
 }
 
+// Publish each APK a second time under a name that says what it is.
+//
+// The build cannot simply rename its output: the Flutter Gradle plugin copies
+// every APK into build/app/outputs/flutter-apk/ under a fixed
+// `app[-abi][-flavor]-<mode>.apk`, and `flutter build apk` then looks for that
+// exact name and fails the build when it is missing. So the original copy is
+// left alone and a named one is written beside it.
+//
+// The flavor and build type are only spelled out when they are not the shipping
+// `normal` release, so the usual artifact stays `discoverium-<version>.apk`
+// while a debug or F-Droid build cannot silently overwrite it.
+val flutterApkDir = layout.buildDirectory.dir("outputs/flutter-apk")
+android.applicationVariants.configureEach {
+    val variant = this
+    val versionName = flutterVersionName
+    val flavorPart = if (variant.flavorName == "normal") "" else "-${variant.flavorName}"
+    val buildTypePart = if (variant.buildType.name == "release") "" else "-${variant.buildType.name}"
+    val outputFiles = variant.outputs.map { output ->
+        val abi = output.filters.find { it.filterType == "ABI" }?.identifier
+        output.outputFile to if (abi != null) "-$abi" else ""
+    }
+    variant.assembleProvider.configure {
+        doLast {
+            val destination = flutterApkDir.get().asFile
+            destination.mkdirs()
+            outputFiles.forEach { (source, abiPart) ->
+                if (source.exists()) {
+                    source.copyTo(
+                        destination.resolve(
+                            "discoverium-$versionName$flavorPart$buildTypePart$abiPart.apk"
+                        ),
+                        overwrite = true
+                    )
+                }
+            }
+        }
+    }
+}
+
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")

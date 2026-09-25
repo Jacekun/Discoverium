@@ -2,10 +2,9 @@ import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import 'package:markdown/markdown.dart' as md;
 import 'package:obtainium/app_sources/github.dart';
 import 'package:obtainium/components/app_list_tile.dart';
+import 'package:obtainium/components/app_markdown.dart';
 import 'package:obtainium/components/category_editor.dart';
 import 'package:obtainium/components/generated_form_renderer.dart';
 import 'package:obtainium/components/ui_widgets.dart';
@@ -1004,7 +1003,10 @@ class _AppPageState extends State<AppPage> {
             _releaseNotesHeader(context, sections[i].label),
             sections[i].notes == null
                 ? _releaseNotesPlaceholder(context, sections[i].placeholder)
-                : _releaseNotesMarkdown(context, sections[i].notes!, app.app),
+                : AppMarkdown(
+                    data: sections[i].notes!,
+                    relativeLinkBase: app.app.url,
+                  ),
           ],
         ),
     ];
@@ -1211,35 +1213,12 @@ class _AppPageState extends State<AppPage> {
   List<Widget> _buildAboutSection(AppInMemory? app) {
     final about = app?.app.additionalSettings['about'];
     if (about is! String || about.isEmpty) return const [];
-    // Reuse the built MarkdownBody while the content is unchanged: returning
+    // Reuse the built AppMarkdown while the content is unchanged: returning
     // the identical widget instance lets Flutter skip re-parsing it on every
     // rebuild (download ticks, probes, etc.).
     if (_aboutCacheKey != about || _aboutCache == null) {
       _aboutCacheKey = about;
-      _aboutCache = LegacyMaterialBridge(
-        child: MarkdownBody(
-          data: about,
-          styleSheet: MarkdownStyleSheet(
-            blockquoteDecoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-            ),
-          ),
-          onTapLink: (text, href, title) {
-            if (href != null) {
-              unawaited(
-                launchUrlString(href, mode: LaunchMode.externalApplication),
-              );
-            }
-          },
-          extensionSet: md.ExtensionSet(
-            md.ExtensionSet.gitHubFlavored.blockSyntaxes,
-            [
-              md.EmojiSyntax(),
-              ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
-            ],
-          ),
-        ),
-      );
+      _aboutCache = AppMarkdown(data: about);
     }
     return [
       const SliverToBoxAdapter(child: SizedBox(height: AppSpacings.sectionGap)),
@@ -1611,31 +1590,6 @@ Widget _releaseNotesHeader(BuildContext context, String text) => Padding(
     ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
   ),
 );
-
-/// Release notes rendered as markdown. Shared so both sections render the same
-/// markdown the same way; [app] supplies the base for relative links.
-Widget _releaseNotesMarkdown(BuildContext context, String notes, App app) =>
-    MarkdownBody(
-      data: notes,
-      styleSheet: MarkdownStyleSheet(
-        blockquoteDecoration: BoxDecoration(color: Theme.of(context).cardColor),
-      ),
-      onTapLink: (text, href, title) {
-        if (href == null) return;
-        unawaited(
-          launchUrlString(
-            href.startsWith('http://') || href.startsWith('https://')
-                ? href
-                : '${Uri.parse(app.url).origin}/$href',
-            mode: LaunchMode.externalApplication,
-          ),
-        );
-      },
-      extensionSet: md.ExtensionSet(
-        md.ExtensionSet.gitHubFlavored.blockSyntaxes,
-        [md.EmojiSyntax(), ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes],
-      ),
-    );
 
 Widget _releaseNotesPlaceholder(BuildContext context, String text) => Text(
   text,

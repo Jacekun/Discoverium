@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/semantics.dart';
-import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import 'package:markdown/markdown.dart' as md;
+import 'package:obtainium/components/app_markdown.dart';
 import 'package:obtainium/components/generated_form_renderer.dart';
 import 'package:obtainium/main.dart';
 import 'package:obtainium/theme.dart';
@@ -49,36 +48,7 @@ void showChangeLogDialog(
               ? const SizedBox(height: 16)
               : const SizedBox.shrink(),
           appSource.changeLogIfAnyIsMarkDown
-              ? LegacyMaterialBridge(
-                  child: MarkdownBody(
-                    styleSheet: MarkdownStyleSheet(
-                      blockquoteDecoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                      ),
-                    ),
-                    data: changeLog,
-                    onTapLink: (text, href, title) {
-                      if (href != null) {
-                        unawaited(
-                          launchUrlString(
-                            href.startsWith('http://') ||
-                                    href.startsWith('https://')
-                                ? href
-                                : '${Uri.parse(app.url).origin}/$href',
-                            mode: LaunchMode.externalApplication,
-                          ),
-                        );
-                      }
-                    },
-                    extensionSet: md.ExtensionSet(
-                      md.ExtensionSet.gitHubFlavored.blockSyntaxes,
-                      [
-                        md.EmojiSyntax(),
-                        ...md.ExtensionSet.gitHubFlavored.inlineSyntaxes,
-                      ],
-                    ),
-                  ),
-                )
+              ? AppMarkdown(data: changeLog, relativeLinkBase: app.url)
               : Text(changeLog),
         ],
         singleNullReturnButton: tr('ok'),

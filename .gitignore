@@ -69,3 +69,6 @@ packages/*/pubspec.lock
 
 
 .claude/
+
+# Golden-test diff output, written only on a failing run.
+test/goldens/failures/
